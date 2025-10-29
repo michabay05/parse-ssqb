@@ -20,7 +20,7 @@ Below are all the list of TODOs created by @michabay05.
     - Some questions take up more than one page.
 - [x] (fix) Resolve parsing issue with R&W pdfs
 - [x] (feat) Export parsed information to csv using pandas dataframe
-- [ ] (fix) Identify and remove duplications of the same questions
+- [x] (fix) Identify and remove duplications of the same questions
     - [x] Detect duplicates
-    - [ ] Remove duplicates
-    - [ ] Save a dedupliated version of the pdf
+    - [x] Remove duplicates
+    - [x] Save a dedupliated version of the pdf
