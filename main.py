@@ -292,6 +292,24 @@ def import_parsed_info() -> list[SSQBInfo]:
 
     return ssqb_infos
 
+def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str) -> None:
+    tree: dict[str, dict[str, dict[str, int]]] = {}
+    for info in ssqb_infos:
+        if info.test not in tree.keys():
+            tree[info.test] = {}
+
+        if info.domain not in tree[info.test].keys():
+            tree[info.test][info.domain] = {}
+
+        if info.skill not in tree[info.test][info.domain]:
+            tree[info.test][info.domain][info.skill] = 0
+
+        tree[info.test][info.domain][info.skill] += 1
+
+    with open(output_json, "w") as f:
+        json.dump(tree, f, indent=4)
+
 if __name__ == "__main__":
     # parse_all_ssqb_pdfs()
-    import_parsed_info()
+    ssqb_info: list[SSQBInfo] = import_parsed_info()
+    gen_skill_tree(ssqb_info, "skill-tree.json")
