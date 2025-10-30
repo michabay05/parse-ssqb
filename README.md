@@ -1,6 +1,6 @@
 # parse-ssqb
 
-**Caution**: This project is still under development. Look at the [TODOs](./TODOs.md) for progress updates.
+**Caution**: This project is still under development.
 
 ## Quickstart
 ```
