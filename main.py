@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict
 import datetime as dt
-import json, re, time
+from pathlib import Path
+import json, os, re, time
 from typing import Literal
 
 import pandas as pd
@@ -44,38 +45,38 @@ class Timer:
 def pdf_parsed_output_name(subject: str, difficulty: str, excluded: bool) -> str:
     excluded_str = "excluded" if excluded else ""
 
-    return f"{subject}-{excluded_str}-{difficulty}"
+    return f"./parsed/{subject}-{excluded_str}-{difficulty}"
 
 def dedup_pdf_output_path(orig_pdf_path: str) -> str:
     return f"./dedup/dedup-{'-'.join(orig_pdf_path.split('-')[1:])}"
 
-ORIG_PDF_PATHS: dict[str, dict] = {
-    "./original/orig-math-excluded-easy.pdf": {
+PDF_PATHS: dict[str, dict] = {
+    "./dedup/dedup-math-excluded-easy.pdf": {
         "subject": "Math",
         "difficulty": "easy",
         "excluded": True,
     },
-    "./original/orig-math-excluded-medium.pdf": {
+    "./dedup/dedup-math-excluded-medium.pdf": {
         "subject": "Math",
         "difficulty": "medium",
         "excluded": True,
     },
-    "./original/orig-math-excluded-hard.pdf": {
+    "./dedup/dedup-math-excluded-hard.pdf": {
         "subject": "Math",
         "difficulty": "hard",
         "excluded": True,
     },
-    "./original/orig-rw-excluded-easy.pdf": {
+    "./dedup/dedup-rw-excluded-easy.pdf": {
         "subject": "R&W",
         "difficulty": "easy",
         "excluded": True,
     },
-    "./original/orig-rw-excluded-medium.pdf": {
+    "./dedup/dedup-rw-excluded-medium.pdf": {
         "subject": "R&W",
         "difficulty": "medium",
         "excluded": True,
     },
-    "./original/orig-rw-excluded-hard.pdf": {
+    "./dedup/dedup-rw-excluded-hard.pdf": {
         "subject": "R&W",
         "difficulty": "hard",
         "excluded": True,
@@ -88,6 +89,7 @@ PAGE_DELIMITER: str = ":"
 @dataclass
 class SSQBInfo:
     q_id: str
+    test: str
     domain: str
     skill: str
     page_inds: list[int]
@@ -155,10 +157,11 @@ def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
         label_info_pat = r"Assessment (\w*) Test ([\w\s]*) Domain ([\w\s]*) Skill ([\w\s]*) D"
         matches = re.findall(label_info_pat, label_infos)
         for mat in matches:
-            assessment, _, domain, skill = mat
+            assessment, test, domain, skill = mat
             assert assessment == "SAT"
             q_infos.append(SSQBInfo(
                 q_id,
+                test,
                 domain,
                 skill,
                 page_inds
@@ -171,12 +174,14 @@ def ssqb_infos_to_df(ssqb_infos: list[SSQBInfo]) -> pd.DataFrame:
     data: dict = {
         "ID": [],
         "Pages": [],
+        "Test": [],
         "Domain": [],
         "Skill": [],
     }
     for info in ssqb_infos:
         data["ID"].append(info.q_id)
         data["Pages"].append(info.pages_as_str())
+        data["Test"].append(info.test)
         data["Domain"].append(info.domain)
         data["Skill"].append(info.skill)
 
@@ -208,11 +213,11 @@ def dedup_ssqb_pdfs(pdf_path: str) -> Document:
 
     return dedup_doc
 
-if __name__ == "__main__":
+def parse_all_ssqb_pdfs() -> None:
     meta_info_list: list[dict] = []
     output_format: str = "csv"
 
-    for orig_path, info in ORIG_PDF_PATHS.items():
+    for orig_path, info in PDF_PATHS.items():
         subject = info["subject"]
         difficulty = info["difficulty"]
         assert subject in ["Math", "R&W"], f"Subject('{subject}') must be either Math or R&W."
@@ -234,8 +239,9 @@ if __name__ == "__main__":
         df: pd.DataFrame = ssqb_infos_to_df(ssqb_infos)
         timer.stop(f"Completed parsing '{orig_path}'")
 
-        dedup_doc: Document = dedup_ssqb_pdfs(orig_path)
-        dedup_doc.save(dedup_pdf_output_path(orig_path))
+        # NOTE: deduplication does not have to always happen
+        # dedup_doc: Document = dedup_ssqb_pdfs(orig_path)
+        # dedup_doc.save(dedup_pdf_output_path(orig_path))
 
         output_path = f"{output_name.lower()}.{output_format}"
         if output_format == "csv":
@@ -251,3 +257,41 @@ if __name__ == "__main__":
 
     with open("meta_infos.json", "w") as f:
         json.dump(meta_info_list, f, indent=4)
+
+def import_parsed_info() -> list[SSQBInfo]:
+    df_list: list[pd.DataFrame] = []
+    dir: str = "./parsed"
+    for file_path in os.listdir(dir):
+        path = f"{dir}/{file_path}"
+        if Path(path).suffix != ".csv":
+            print(f"Ignoring other files found: '{path}'")
+            continue
+
+        df_list.append(pd.read_csv(path))
+
+    all_df = pd.concat(df_list, ignore_index=True)
+    ssqb_infos: list[SSQBInfo] = []
+    for i in range(len(all_df)):
+
+        pages_str = str(all_df["Pages"][i]) # type: ignore
+        assert isinstance(pages_str, str)
+        pages_str: list[str] = pages_str.split(PAGE_DELIMITER)
+        assert len(pages_str) == 1 or len(pages_str) == 2
+
+        page_inds: list[int] = [int(pages_str[0])]
+        if len(pages_str) == 2:
+            page_inds.append(int(pages_str[1]))
+
+        ssqb_infos.append(SSQBInfo(
+            q_id=all_df["ID"][i], # type: ignore
+            test=all_df["Test"][i], # type: ignore
+            domain=all_df["Domain"][i], # type: ignore
+            skill=all_df["Skill"][i], # type: ignore
+            page_inds=page_inds
+        ))
+
+    return ssqb_infos
+
+if __name__ == "__main__":
+    # parse_all_ssqb_pdfs()
+    import_parsed_info()
