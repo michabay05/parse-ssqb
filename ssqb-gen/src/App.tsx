@@ -2,28 +2,27 @@ import { useEffect, useState } from "react";
 
 interface FilterCompProps {
     name: string;
-    isSkill: boolean;
+    enabled: boolean;
+    btnCallback: () => void;
 }
 
-function FilterLine({ name, isSkill }: FilterCompProps) {
-    const text = isSkill ? <p>{name}</p> : <h3>{name}</h3>
-    const skillClasses = isSkill ? "w-11/12 ml-auto py-2" : "pt-4 pb-2";
-    const addCancelBtnClass = "mr-2 text-green-600 hover:bg-gray-200 hover:cursor-pointer";
+function FilterLine({ name, enabled, btnCallback }: FilterCompProps) {
+    const addCancelBtnClass = "mr-2 hover:bg-gray-200 hover:cursor-pointer";
+    const modifyBtn = enabled
+        ? <CancelCircleSVG classNames={`text-red-400 ${addCancelBtnClass}`} />
+        : <AddCircleSVG classNames={`text-green-600 ${addCancelBtnClass}`} />
 
-    return <div className={`flex ${skillClasses} justify-between border-b border-b-gray-600`}>
-        {/* Left side */}
+    return <div
+        className="flex w-11/12 ml-auto py-2 justify-between border-b border-b-gray-600">
         <div className="flex">
-            {/*<input type="checkbox" className="mr-4" />*/}
-            <button>
-                <AddCircleSVG classNames={addCancelBtnClass} />
+            <button onClick={btnCallback}>
+                {modifyBtn}
+                {/*<CancelCircleSVG classNames={`text-red-400 ${addCancelBtnClass} ${enabled ? "" : "hidden"}`} />
+                <AddCircleSVG classNames={`text-green-600 ${addCancelBtnClass} ${enabled ? "hidden" : ""}`} />*/}
             </button>
-            {text}
+            <p>{name}</p>
         </div>
-        {/* Right side */}
-        <div>
-            {/*<RandomDiceSVG classNames="" />*/}
-            <input type="number" className="w-10 border-2 rounded-sm text-center px-1" pattern="[0-9]" />
-        </div>
+        <input type="number" className="w-10 border-2 rounded-sm text-center px-1" pattern="[0-9]" />
     </div>;
 }
 
@@ -33,82 +32,142 @@ interface NestedDict {
     }
 }
 
+interface SkillFilter {
+    id: number;
+    name: string;
+    enabled: boolean;
+    qty: number;
+}
+
+class DomainFilter {
+    isRW: boolean;
+    name: string;
+    skills: SkillFilter[];
+
+    constructor(name: string, isRW: boolean, skills: SkillFilter[]) {
+        this.name = name;
+        this.isRW = isRW;
+        this.skills = skills;
+    }
+}
+
+function renderDomainFilters(dfs: DomainFilter[], btnCallback: (domainName: string, skillIndex: number) => void) {
+    const output = [];
+    for (const [dI, df] of dfs.entries()) {
+        const skillFilters = [];
+        for (const [sI, skill] of df.skills.entries()) {
+            skillFilters.push(
+                <FilterLine
+                    key={`${dI},${sI}`}
+                    name={skill.name} enabled={skill.enabled}
+                    btnCallback={() => {
+                        btnCallback(df.name, sI);
+                    }}
+                />
+            )
+        }
+
+        output.push(<div key={dI} >
+            <h3>{df.name}</h3>
+            {skillFilters}
+        </div>);
+    }
+
+    return <>{output}</>;
+}
+
 export default function App() {
-    const [rwTree, setRWTree] = useState<NestedDict>({});
-    const [mathTree, setMathTree] = useState<NestedDict>({});
+    const [filters, setFilters] = useState<DomainFilter[]>([]);
+
     const rw = "Reading and Writing";
     const math = "Math";
     useEffect(() => {
+        let rwTree: NestedDict = {};
+        let mathTree: NestedDict = {};
         const fetchSkillTree = async () => {
             const response = await fetch("skill-tree.json");
             const resJson = await response.json();
-            setRWTree(resJson[rw]);
-            setMathTree(resJson[math]);
-        };
+            rwTree = resJson[rw];
+            mathTree = resJson[math];
 
+            let i = 0;
+            const tempFilters = [];
+            for (const domain in rwTree) {
+                const skills: SkillFilter[] = [];
+                for (const skill in rwTree[domain]) {
+                    skills.push({
+                        id: i++,
+                        name: skill,
+                        enabled: false,
+                        qty: 0,
+                    });
+                }
+                tempFilters.push(new DomainFilter(domain, true, skills));
+            }
+
+            for (const domain in mathTree) {
+                const skills: SkillFilter[] = [];
+                for (const skill in mathTree[domain]) {
+                    skills.push({
+                        id: i++,
+                        name: skill,
+                        enabled: false,
+                        qty: 0,
+                    });
+                }
+                tempFilters.push(new DomainFilter(domain, false, skills));
+            }
+
+            setFilters(tempFilters);
+        };
         fetchSkillTree();
     }, []);
 
-
-    const rwFilters = [];
-    for (const domain in rwTree) {
-        rwFilters.push(<FilterLine name={domain} isSkill={false} />)
-        for (const skill in mathTree) {
-            rwFilters.push(<FilterLine name={skill} isSkill={true} />)
-        }
+    const btnCallback = (domainName: string, skillIndex: number) => {
+        setFilters(filters.map(f => {
+            if (f.name == domainName) {
+                // Toggle (enable/disable)
+                const newSkills = [...f.skills];
+                const v = newSkills[skillIndex].enabled;
+                newSkills[skillIndex].enabled = !v;
+                const newDomain = new DomainFilter(domainName, f.isRW, newSkills);
+                return newDomain;
+            } else {
+                return f;
+            }
+        }))
     }
 
-    const mathFilters = [];
-    for (const domain in mathTree) {
-        mathFilters.push(<FilterLine name={domain} isSkill={false} />)
-        for (const skill in mathTree[domain]) {
-            mathFilters.push(<FilterLine name={skill} isSkill={true} />)
-        }
-    }
 
     return <div className="flex w-9/10 max-w-5xl mx-auto justify-around">
         <div className="w-full outline p-5">
             <h2 className="text-center font-bold mb-4">{rw}</h2>
-            {rwFilters}
+            {renderDomainFilters(filters.filter(f => f.isRW), btnCallback)}
         </div>
         <div className="w-full outline p-5">
             <h2 className="text-center font-bold mb-4">{math}</h2>
-            {mathFilters}
+            {renderDomainFilters(filters.filter(f => !f.isRW), btnCallback)}
         </div>
     </div>;
-}
-
-// Source: https://lucide.dev/icons/dices
-function RandomDiceSVG() {
-    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        className="">
-        <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
-        <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" />
-        <path d="M6 18h.01" />
-        <path d="M10 14h.01" />
-        <path d="M15 6h.01" />
-        <path d="M18 9h.01" />
-    </svg>;
-}
-
-function CancelCircleSVG() {
-    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        className="">
-        <circle cx="12" cy="12" r="10" />
-        <path d="m15 9-6 6" />
-        <path d="m9 9 6 6" />
-    </svg>;
 }
 
 interface IconSVGProps {
     classNames: string;
 }
 
+function CancelCircleSVG({classNames}: IconSVGProps) {
+    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        className={classNames}>
+        <circle cx="12" cy="12" r="10" />
+        <path d="m15 9-6 6" />
+        <path d="m9 9 6 6" />
+    </svg>;
+}
+
 function AddCircleSVG({classNames}: IconSVGProps) {
     return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
         className={classNames}>
         <circle cx="12" cy="12" r="10" />
         <path d="M8 12h8" />
