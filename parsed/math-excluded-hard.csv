@@ -1,58 +1,58 @@
-ID,Pages,Test,Domain,Skill
-ac472881,1,Math,Algebra,Linear equations in one variable
-d1b66ae6,2,Math,Algebra,Systems of two linear equations in two variables
-3cdbf026,3,Math,Algebra,Linear equations in two variables
-ff501705,4,Math,Algebra,Systems of two linear equations in two variables
-2937ef4f,5,Math,Algebra,Linear equations in one variable
-9bbce683,6,Math,Algebra,Linear equations in two variables
-2b15d65f,7,Math,Algebra,Linear functions
-e25f0807,8,Math,Algebra,Linear functions
-be9cb6a2,9,Math,Algebra,Linear functions
-db422e7f,10,Math,Algebra,Linear equations in two variables
-45cfb9de,11,Math,Algebra,Linear inequalities in one or two variables
-f14484a5,12,Math,Algebra,Linear equations in one variable
-b7e6394d,13,Math,Algebra,Linear equations in one variable
-ee2f611f,14,Math,Algebra,Linear inequalities in one or two variables
-25e1cfed,15,Math,Algebra,Linear equations in one variable
-fdee0fbf,16,Math,Algebra,Linear equations in two variables
-f75bd744,17,Math,Algebra,Systems of two linear equations in two variables
-b3abf40f,18,Math,Algebra,Linear functions
-e6cb2402,19,Math,Algebra,Linear equations in one variable
-b988eeec,20,Math,Algebra,Linear functions
-70feb725,21,Math,Algebra,Systems of two linear equations in two variables
-1a621af4,22,Math,Algebra,Linear inequalities in one or two variables
-af2ba762,23,Math,Algebra,Linear functions
-b9835972,24,Math,Algebra,Linear equations in two variables
-e1248a5c,25,Math,Algebra,Systems of two linear equations in two variables
-05bb1af9,26,Math,Algebra,Linear equations in two variables
-52cb8ea4,27,Math,Algebra,Systems of two linear equations in two variables
-0b46bad5,28,Math,Algebra,Linear equations in two variables
-c362c210,29,Math,Algebra,Linear equations in two variables
-94b48cbf,30,Math,Algebra,Linear equations in two variables
-50f4cb9c,31,Math,Algebra,Linear functions
-16889ef3,32,Math,Algebra,Linear functions
-d7bf55e1,33,Math,Algebra,Systems of two linear equations in two variables
-771bd0ca,34,Math,Algebra,Linear equations in one variable
-a309803e,35,Math,Algebra,Linear functions
-55ea82f3,36,Math,Algebra,Linear inequalities in one or two variables
-98d3393a,37,Math,Algebra,Linear equations in two variables
-0b0fa68b,38,Math,Algebra,Linear functions
-6989c80a,39,Math,Algebra,Linear functions
-e8f9e117,40,Math,Algebra,Linear inequalities in one or two variables
-a7e2859a,41,Math,Algebra,Linear functions
-f718c9cf,42,Math,Algebra,Systems of two linear equations in two variables
-466b87e3,43,Math,Algebra,Systems of two linear equations in two variables
-aee9fd2d,44,Math,Algebra,Linear equations in one variable
-0366d965,45,Math,Algebra,Linear equations in two variables
-6d8ad460,46,Math,Algebra,Linear equations in two variables
-963da34c,47,Math,Algebra,Linear inequalities in one or two variables
-e2e3942f,48,Math,Algebra,Systems of two linear equations in two variables
-2d54c272,49,Math,Algebra,Linear equations in two variables
-1e0a46e4,50,Math,Algebra,Systems of two linear equations in two variables
-dba6a25a,51,Math,Geometry and Trigonometry,Right triangles and trigonometry
-c984f1a5,52,Math,Geometry and Trigonometry,Area and volume
-acd30391,53,Math,Geometry and Trigonometry,Circles
-14e7c1f4,54,Math,Geometry and Trigonometry,Right triangles and trigonometry
-25da87f8,55,Math,Geometry and Trigonometry,Right triangles and trigonometry
-459dd6c5,56,Math,Geometry and Trigonometry,Area and volume
-310c87fe,57,Math,Geometry and Trigonometry,Area and volume
+ID,Pages,Test,Domain,Skill,Source_PDF
+ac472881,1,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-hard.pdf
+d1b66ae6,2,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+3cdbf026,3,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+ff501705,4,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+2937ef4f,5,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-hard.pdf
+9bbce683,6,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+2b15d65f,7,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+e25f0807,8,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+be9cb6a2,9,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+db422e7f,10,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+45cfb9de,11,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-hard.pdf
+f14484a5,12,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-hard.pdf
+b7e6394d,13,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-hard.pdf
+ee2f611f,14,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-hard.pdf
+25e1cfed,15,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-hard.pdf
+fdee0fbf,16,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+f75bd744,17,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+b3abf40f,18,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+e6cb2402,19,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-hard.pdf
+b988eeec,20,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+70feb725,21,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+1a621af4,22,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-hard.pdf
+af2ba762,23,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+b9835972,24,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+e1248a5c,25,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+05bb1af9,26,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+52cb8ea4,27,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+0b46bad5,28,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+c362c210,29,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+94b48cbf,30,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+50f4cb9c,31,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+16889ef3,32,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+d7bf55e1,33,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+771bd0ca,34,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-hard.pdf
+a309803e,35,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+55ea82f3,36,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-hard.pdf
+98d3393a,37,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+0b0fa68b,38,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+6989c80a,39,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+e8f9e117,40,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-hard.pdf
+a7e2859a,41,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-hard.pdf
+f718c9cf,42,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+466b87e3,43,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+aee9fd2d,44,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-hard.pdf
+0366d965,45,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+6d8ad460,46,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+963da34c,47,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-hard.pdf
+e2e3942f,48,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+2d54c272,49,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+1e0a46e4,50,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-hard.pdf
+dba6a25a,51,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-hard.pdf
+c984f1a5,52,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-hard.pdf
+acd30391,53,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-hard.pdf
+14e7c1f4,54,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-hard.pdf
+25da87f8,55,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-hard.pdf
+459dd6c5,56,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-hard.pdf
+310c87fe,57,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-hard.pdf

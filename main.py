@@ -1,7 +1,7 @@
 from dataclasses import dataclass, asdict
 import datetime as dt
 from pathlib import Path
-import json, os, re, time
+import json, os, random, re, time
 from typing import Literal
 
 import pandas as pd
@@ -84,7 +84,7 @@ PDF_PATHS: dict[str, dict] = {
 }
 
 timer: Timer = Timer()
-PAGE_DELIMITER: str = ":"
+PAGE_DELIMITER: str = "_"
 
 @dataclass
 class SSQBInfo:
@@ -92,6 +92,7 @@ class SSQBInfo:
     test: str
     domain: str
     skill: str
+    src_pdf: str
     page_inds: list[int]
 
     def pages_as_str(self) -> str:
@@ -164,6 +165,7 @@ def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
                 test,
                 domain,
                 skill,
+                path,
                 page_inds
             ))
 
@@ -177,6 +179,7 @@ def ssqb_infos_to_df(ssqb_infos: list[SSQBInfo]) -> pd.DataFrame:
         "Test": [],
         "Domain": [],
         "Skill": [],
+        "Source_PDF": [],
     }
     for info in ssqb_infos:
         data["ID"].append(info.q_id)
@@ -184,6 +187,7 @@ def ssqb_infos_to_df(ssqb_infos: list[SSQBInfo]) -> pd.DataFrame:
         data["Test"].append(info.test)
         data["Domain"].append(info.domain)
         data["Skill"].append(info.skill)
+        data["Source_PDF"].append(info.src_pdf)
 
     return pd.DataFrame(data)
 
@@ -215,7 +219,7 @@ def dedup_ssqb_pdfs(pdf_path: str) -> Document:
 
 def parse_all_ssqb_pdfs() -> None:
     meta_info_list: list[dict] = []
-    output_format: str = "csv"
+    all_ssqb_infos: list[SSQBInfo] = []
 
     for orig_path, info in PDF_PATHS.items():
         subject = info["subject"]
@@ -236,6 +240,7 @@ def parse_all_ssqb_pdfs() -> None:
         output_name = pdf_parsed_output_name(**info)
         timer.start()
         ssqb_infos: list[SSQBInfo] = parse_ssqb_pdfs(orig_path)
+        all_ssqb_infos.extend(ssqb_infos)
         df: pd.DataFrame = ssqb_infos_to_df(ssqb_infos)
         timer.stop(f"Completed parsing '{orig_path}'")
 
@@ -243,17 +248,13 @@ def parse_all_ssqb_pdfs() -> None:
         # dedup_doc: Document = dedup_ssqb_pdfs(orig_path)
         # dedup_doc.save(dedup_pdf_output_path(orig_path))
 
-        output_path = f"{output_name.lower()}.{output_format}"
-        if output_format == "csv":
-            df.to_csv(output_path, index=False)
-        elif output_format == "json":
-            df.to_json(output_path, index=False)
-        else:
-            print(f"Failed to export: Unknown format ('{output_format}')")
-            print("Exporting to csv...")
-            df.to_csv(output_path, index=False)
+        output_path = f"{output_name.lower()}.csv"
+        df.to_csv(output_path, index=False)
 
         timer.stop(f"Completed exporting '{orig_path}'\n-------------")
+
+    combined_df: pd.DataFrame = ssqb_infos_to_df(all_ssqb_infos)
+    combined_df.to_csv("combined_infos.csv", index=False)
 
     with open("meta_infos.json", "w") as f:
         json.dump(meta_info_list, f, indent=4)
@@ -271,22 +272,23 @@ def import_parsed_info() -> list[SSQBInfo]:
 
     all_df = pd.concat(df_list, ignore_index=True)
     ssqb_infos: list[SSQBInfo] = []
-    for i in range(len(all_df)):
 
+    for i in range(len(all_df)):
         pages_str = str(all_df["Pages"][i]) # type: ignore
         assert isinstance(pages_str, str)
         pages_str: list[str] = pages_str.split(PAGE_DELIMITER)
         assert len(pages_str) == 1 or len(pages_str) == 2
 
-        page_inds: list[int] = [int(pages_str[0])]
+        page_inds: list[int] = [int(pages_str[0]) - 1]
         if len(pages_str) == 2:
-            page_inds.append(int(pages_str[1]))
+            page_inds.append(int(pages_str[1]) - 1)
 
         ssqb_infos.append(SSQBInfo(
             q_id=all_df["ID"][i], # type: ignore
             test=all_df["Test"][i], # type: ignore
             domain=all_df["Domain"][i], # type: ignore
             skill=all_df["Skill"][i], # type: ignore
+            src_pdf=all_df["Source_PDF"][i], # type: ignore
             page_inds=page_inds
         ))
 
@@ -309,7 +311,64 @@ def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str) -> None:
     with open(output_json, "w") as f:
         json.dump(tree, f, indent=4)
 
+def create_question_set(json_path: str, ssqb_infos: list[SSQBInfo]) -> None:
+    # The information about the question set's composition is found from the json
+    with open(json_path, "r") as f:
+        set_info = json.load(f)
+
+    output_pdf_path: str = set_info["outputPath"]
+    total_questions: int = set_info["totalQuestions"]
+    all_chosen: list[SSQBInfo] = []
+
+    for test in ["RW", "Math"]:
+        for domain, skills_info in set_info[test].items():
+            for skill, qty in skills_info.items():
+                # Find questions that test the expected skill
+                valid_qs_inds: list[int] = []
+                for i, q in enumerate(ssqb_infos):
+                    if q.domain == domain and q.skill == skill:
+                        valid_qs_inds.append(i)
+
+                if qty >= len(valid_qs_inds):
+                    print(
+                        f"For skill ({skill}), expected question count exceeds "
+                        "questions that satisfy the requirement")
+                    continue
+
+                chosen_inds = random.choices(valid_qs_inds, k=min(qty, len(valid_qs_inds)))
+                all_chosen.extend([ssqb_infos[c_i] for c_i in chosen_inds])
+
+
+    assert len(all_chosen) <= total_questions, (
+        f"Requested questions ({total_questions}) && Provided questions ({len(all_chosen)})"
+    )
+    gen_pdf_from_ssqb_infos(all_chosen, output_pdf_path)
+
+def gen_pdf_from_ssqb_infos(ssqb_infos: list[SSQBInfo], output_pdf_path: str) -> None:
+    out_pdf: Document = Document()
+
+    print(f"Saving {len(ssqb_infos)} questions...")
+
+    path_to_docs: dict[str, Document] = {}
+    for ssqb in ssqb_infos:
+        if ssqb.src_pdf not in path_to_docs.keys():
+            path_to_docs[ssqb.src_pdf] = fitz.open(ssqb.src_pdf)
+
+        doc: Document = path_to_docs[ssqb.src_pdf]
+        page_nos: list[int] = ssqb.page_inds
+        if len(page_nos) == 1:
+            page_nos.append(page_nos[0])
+
+        assert len(page_nos) == 2, f"A page range should have only 2 numbers -> pages: {page_nos}"
+
+        for pg_no in range(page_nos[0], page_nos[1] + 1):
+            if not is_page_empty(doc.load_page(pg_no)):
+                out_pdf.insert_pdf(doc, from_page=pg_no, to_page=pg_no)
+
+    out_pdf.save(output_pdf_path)
+
 if __name__ == "__main__":
     # parse_all_ssqb_pdfs()
-    ssqb_info: list[SSQBInfo] = import_parsed_info()
-    gen_skill_tree(ssqb_info, "skill-tree.json")
+    ssqb_infos: list[SSQBInfo] = import_parsed_info()
+    create_question_set("input.json", ssqb_infos)
+    # gen_skill_tree(ssqb_info, "skill-tree.json")
