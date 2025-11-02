@@ -344,7 +344,16 @@ export default function App() {
                 <p className="mb-4">
                     Copy the JSON text below and save it in the project folder as <code className="bg-gray-300 rounded">input.json</code>.
                 </p>
-                <pre className="p-6 bg-zinc-300 rounded-lg w-full">{exportContent}</pre>
+                <div className="bg-zinc-300 rounded-lg relative">
+                    <button
+                        onClick={() => navigator.clipboard.writeText(exportContent)}
+                        className="p-2 absolute top-6 right-8 hover:cursor-pointer hover:rounded hover:bg-zinc-400">
+                        <ClipboardSVG />
+                    </button>
+                    <pre className="p-6 w-full">
+                        {exportContent}
+                    </pre>
+                </div>
             </div>
             : <></>
         }
@@ -387,10 +396,10 @@ function RightChevronSVG({classNames}: IconSVGProps) {
 }
 
 // Source: https://lucide.dev/icons/clipboard
-function ClipboardSVG({classNames}: IconSVGProps) {
+function ClipboardSVG() {
     return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
         fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className={classNames}>
+        className="">
         <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
     </svg>
