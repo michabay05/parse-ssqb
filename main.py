@@ -254,7 +254,7 @@ def parse_all_ssqb_pdfs() -> None:
         timer.stop(f"Completed exporting '{orig_path}'\n-------------")
 
     combined_df: pd.DataFrame = ssqb_infos_to_df(all_ssqb_infos)
-    combined_df.to_csv("combined_infos.csv", index=False)
+    combined_df.to_csv("./parsed/combined_infos.csv", index=False)
 
     with open("meta_infos.json", "w") as f:
         json.dump(meta_info_list, f, indent=4)
@@ -368,7 +368,7 @@ def gen_pdf_from_ssqb_infos(ssqb_infos: list[SSQBInfo], output_pdf_path: str) ->
     out_pdf.save(output_pdf_path)
 
 if __name__ == "__main__":
-    # parse_all_ssqb_pdfs()
-    ssqb_infos: list[SSQBInfo] = import_parsed_info()
-    create_question_set("input.json", ssqb_infos)
+    parse_all_ssqb_pdfs()
+    # ssqb_infos: list[SSQBInfo] = import_parsed_info()
+    # create_question_set("input.json", ssqb_infos)
     # gen_skill_tree(ssqb_info, "skill-tree.json")
