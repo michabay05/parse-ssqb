@@ -41,46 +41,28 @@ class Timer:
 
         print(f"[{diff_str:>10}] {msg}")
 
+@dataclass
+class FileInfo:
+    subject: str
+    difficulty: Level
+    excluded: bool
 
-def pdf_parsed_output_name(subject: str, difficulty: str, excluded: bool) -> str:
-    excluded_str = "excluded" if excluded else ""
 
-    return f"./parsed/{subject}-{excluded_str}-{difficulty}"
+def pdf_parsed_output_name(info: FileInfo) -> str:
+    excluded_str = "excluded" if info.excluded else ""
+
+    return f"./parsed/{info.subject}-{excluded_str}-{info.difficulty}"
 
 def dedup_pdf_output_path(orig_pdf_path: str) -> str:
     return f"./dedup/dedup-{'-'.join(orig_pdf_path.split('-')[1:])}"
 
-PDF_PATHS: dict[str, dict] = {
-    "./dedup/dedup-math-excluded-easy.pdf": {
-        "subject": "Math",
-        "difficulty": "easy",
-        "excluded": True,
-    },
-    "./dedup/dedup-math-excluded-medium.pdf": {
-        "subject": "Math",
-        "difficulty": "medium",
-        "excluded": True,
-    },
-    "./dedup/dedup-math-excluded-hard.pdf": {
-        "subject": "Math",
-        "difficulty": "hard",
-        "excluded": True,
-    },
-    "./dedup/dedup-rw-excluded-easy.pdf": {
-        "subject": "R&W",
-        "difficulty": "easy",
-        "excluded": True,
-    },
-    "./dedup/dedup-rw-excluded-medium.pdf": {
-        "subject": "R&W",
-        "difficulty": "medium",
-        "excluded": True,
-    },
-    "./dedup/dedup-rw-excluded-hard.pdf": {
-        "subject": "R&W",
-        "difficulty": "hard",
-        "excluded": True,
-    },
+PDF_PATHS: dict[str, FileInfo] = {
+    "./dedup/dedup-math-excluded-easy.pdf": FileInfo("Math", "easy", True),
+    "./dedup/dedup-math-excluded-medium.pdf": FileInfo("Math", "medium", True),
+    "./dedup/dedup-math-excluded-hard.pdf": FileInfo("Math", "hard", True),
+    "./dedup/dedup-rw-excluded-easy.pdf": FileInfo("RW", "easy", True),
+    "./dedup/dedup-rw-excluded-medium.pdf": FileInfo("RW", "medium", True),
+    "./dedup/dedup-rw-excluded-hard.pdf": FileInfo("RW", "hard", True)
 }
 
 timer: Timer = Timer()
@@ -91,6 +73,7 @@ class SSQBInfo:
     q_id: str
     test: str
     domain: str
+    level: Level
     skill: str
     src_pdf: str
     page_inds: list[int]
@@ -122,12 +105,15 @@ def is_page_empty(page: Page) -> bool:
     return not (bool(has_text) or bool(has_images))
 
 def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
+    assert path in PDF_PATHS.keys(), f"Unknown path: '{path}'"
+    difficulty: str = PDF_PATHS[path].difficulty
+
     doc: Document = fitz.open(path)
-    last_page_no: int = 0
+    last_page_ind: int = 0
     q_infos: list[SSQBInfo] = []
 
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
+    for page_ind in range(len(doc)):
+        page = doc.load_page(page_ind)
         if is_page_empty(page):
             # Skip pages that are empty
             continue
@@ -146,12 +132,12 @@ def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
             continue
 
         page_inds: list[int] = []
-        if page_num - last_page_no > 1:
-            page_inds = [last_page_no + 1, page_num]
+        if page_ind - last_page_ind > 1:
+            page_inds = [last_page_ind + 1, page_ind]
         else:
-            page_inds = [page_num]
+            page_inds = [page_ind]
 
-        last_page_no = page_num
+        last_page_ind = page_ind
         q_id: str = matches[0]
 
         label_infos = ' '.join(text[labels:].split())
@@ -161,12 +147,13 @@ def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
             assessment, test, domain, skill = mat
             assert assessment == "SAT"
             q_infos.append(SSQBInfo(
-                q_id,
-                test,
-                domain,
-                skill,
-                path,
-                page_inds
+                q_id=q_id,
+                test=test,
+                domain=domain,
+                skill=skill,
+                src_pdf=path,
+                level=difficulty,
+                page_inds=page_inds
             ))
 
     return q_infos
@@ -176,6 +163,7 @@ def ssqb_infos_to_df(ssqb_infos: list[SSQBInfo]) -> pd.DataFrame:
     data: dict = {
         "ID": [],
         "Pages": [],
+        "Difficulty": [],
         "Test": [],
         "Domain": [],
         "Skill": [],
@@ -184,6 +172,7 @@ def ssqb_infos_to_df(ssqb_infos: list[SSQBInfo]) -> pd.DataFrame:
     for info in ssqb_infos:
         data["ID"].append(info.q_id)
         data["Pages"].append(info.pages_as_str())
+        data["Difficulty"].append(info.level)
         data["Test"].append(info.test)
         data["Domain"].append(info.domain)
         data["Skill"].append(info.skill)
@@ -222,9 +211,9 @@ def parse_all_ssqb_pdfs() -> None:
     all_ssqb_infos: list[SSQBInfo] = []
 
     for orig_path, info in PDF_PATHS.items():
-        subject = info["subject"]
-        difficulty = info["difficulty"]
-        assert subject in ["Math", "R&W"], f"Subject('{subject}') must be either Math or R&W."
+        subject = info.subject
+        difficulty = info.difficulty
+        assert subject in ["Math", "RW"], f"Subject('{subject}') must be either Math or RW."
         assert difficulty in ["easy", "medium", "hard"], (
             f"Difficulty('{difficulty}') must be easy, medium, or hard"
         )
@@ -234,10 +223,10 @@ def parse_all_ssqb_pdfs() -> None:
             "source_pdf": orig_path,
             "subject": subject,
             "difficulty": difficulty,
-            "excluded": info["excluded"],
+            "excluded": info.excluded,
         })
 
-        output_name = pdf_parsed_output_name(**info)
+        output_name = pdf_parsed_output_name(info)
         timer.start()
         ssqb_infos: list[SSQBInfo] = parse_ssqb_pdfs(orig_path)
         all_ssqb_infos.extend(ssqb_infos)
@@ -287,6 +276,7 @@ def import_parsed_info() -> list[SSQBInfo]:
             q_id=all_df["ID"][i], # type: ignore
             test=all_df["Test"][i], # type: ignore
             domain=all_df["Domain"][i], # type: ignore
+            level=all_df["Difficulty"][i], # type: ignore
             skill=all_df["Skill"][i], # type: ignore
             src_pdf=all_df["Source_PDF"][i], # type: ignore
             page_inds=page_inds
@@ -369,6 +359,6 @@ def gen_pdf_from_ssqb_infos(ssqb_infos: list[SSQBInfo], output_pdf_path: str) ->
 
 if __name__ == "__main__":
     parse_all_ssqb_pdfs()
-    # ssqb_infos: list[SSQBInfo] = import_parsed_info()
-    # create_question_set("input.json", ssqb_infos)
+    ssqb_infos: list[SSQBInfo] = import_parsed_info()
+    create_question_set("sample_input.json", ssqb_infos)
     # gen_skill_tree(ssqb_info, "skill-tree.json")

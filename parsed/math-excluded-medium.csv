@@ -1,81 +1,81 @@
-ID,Pages,Test,Domain,Skill,Source_PDF
-002dba45,1,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-f224df07,2,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
-cb8f449f,3,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-e62cfe5f,4,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-9b0a4eae,5,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-7e3f8363,6,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-0dd6227f,7,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-7efe5495,8,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-1087f6c4,9,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-71189542,10,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-9d4270fe,11,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-64c85440,12,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
-7a5a74a6,13,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-7625073d,14,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-968e9e51,15,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
-aa85b138,16,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-15daa8d6,17,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-12ee1edc,18,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-620fe971,19,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-17d80dc3,20,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-6e6a3241,21,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-af711d1b,22,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-5cf1bbc9,23,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-9c7741c6,24,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-018a2704,25,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-ed92fb68,26,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-606cdce7,27,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-19fdf387,28,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-a775af14,29,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-dae126d7,30,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-bf5f80c6,31,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
-80da233d,32,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
-271f7e3f,33,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-70e29454,34,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-b31c3117,35,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
-f09097b1,36,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-c5082ce3,37,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-c651cc56,38,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-c22b5f25,39,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-6cb9bf45,40,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
-11e1ab81,41,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-df78b361,42,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-4fe4fd7c,43,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-0d1b1e35,44,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-620abf36,45,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-d62ad380,46,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-23dedddd,47,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-a91a2b75,48,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
-4f669597,49,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
-431c3038,50,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
-e336a1d2,51,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-c0586eb5,52,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-03c6994f,53,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-151eda3c,54,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-5a7e3b46,55,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
-a2659088,56,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-38517165,57,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-8e7689e0,58,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-de550be0,59,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
-800e71b8,60,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-fc8aa563,61,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-74d8b897,62,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-ee540927,63,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-a0cacec1,64,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-2d521ca9,65,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-e9c5bfb2,66,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-856372ca,67,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-9c0a0eca,68,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-bf8d843e,69,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
-aef4fd8a,70,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-95ba2d09,71,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-a71617d3,72,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
-a5aee181,73,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
-13d9a1c3,74,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
-a2e76b60,75,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-468613c0,76,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-37dde49f,77,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-82c8325f,78,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
-cf53cb56,79,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
-b96ff36e,80,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+ID,Pages,Difficulty,Test,Domain,Skill,Source_PDF
+002dba45,1,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+f224df07,2,medium,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
+cb8f449f,3,medium,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+e62cfe5f,4,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+9b0a4eae,5,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+7e3f8363,6,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+0dd6227f,7,medium,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+7efe5495,8,medium,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+1087f6c4,9,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+71189542,10,medium,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+9d4270fe,11,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+64c85440,12,medium,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
+7a5a74a6,13,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+7625073d,14,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+968e9e51,15,medium,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
+aa85b138,16,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+15daa8d6,17,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+12ee1edc,18,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+620fe971,19,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+17d80dc3,20,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+6e6a3241,21,medium,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+af711d1b,22,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+5cf1bbc9,23,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+9c7741c6,24,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+018a2704,25,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+ed92fb68,26,medium,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+606cdce7,27,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+19fdf387,28,medium,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+a775af14,29,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+dae126d7,30,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+bf5f80c6,31,medium,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
+80da233d,32,medium,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
+271f7e3f,33,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+70e29454,34,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+b31c3117,35,medium,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
+f09097b1,36,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+c5082ce3,37,medium,Math,Algebra,Systems of two linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+c651cc56,38,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+c22b5f25,39,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+6cb9bf45,40,medium,Math,Algebra,Linear inequalities in one or two variables,./dedup/dedup-math-excluded-medium.pdf
+11e1ab81,41,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+df78b361,42,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+4fe4fd7c,43,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+0d1b1e35,44,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+620abf36,45,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+d62ad380,46,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+23dedddd,47,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+a91a2b75,48,medium,Math,Algebra,Linear functions,./dedup/dedup-math-excluded-medium.pdf
+4f669597,49,medium,Math,Algebra,Linear equations in one variable,./dedup/dedup-math-excluded-medium.pdf
+431c3038,50,medium,Math,Algebra,Linear equations in two variables,./dedup/dedup-math-excluded-medium.pdf
+e336a1d2,51,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+c0586eb5,52,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+03c6994f,53,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+151eda3c,54,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+5a7e3b46,55,medium,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
+a2659088,56,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+38517165,57,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+8e7689e0,58,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+de550be0,59,medium,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
+800e71b8,60,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+fc8aa563,61,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+74d8b897,62,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+ee540927,63,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+a0cacec1,64,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+2d521ca9,65,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+e9c5bfb2,66,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+856372ca,67,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+9c0a0eca,68,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+bf8d843e,69,medium,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
+aef4fd8a,70,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+95ba2d09,71,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+a71617d3,72,medium,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
+a5aee181,73,medium,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
+13d9a1c3,74,medium,Math,Geometry and Trigonometry,Right triangles and trigonometry,./dedup/dedup-math-excluded-medium.pdf
+a2e76b60,75,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+468613c0,76,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+37dde49f,77,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+82c8325f,78,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf
+cf53cb56,79,medium,Math,Geometry and Trigonometry,Area and volume,./dedup/dedup-math-excluded-medium.pdf
+b96ff36e,80,medium,Math,Geometry and Trigonometry,Circles,./dedup/dedup-math-excluded-medium.pdf

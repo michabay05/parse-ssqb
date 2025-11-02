@@ -1,0 +1,19 @@
+{
+    "outputPath": "sample.pdf",
+    "totalQuestions": 15,
+    "RW": {
+        "Information and Ideas": {
+            "Inferences": 3
+        },
+        "Expression of Ideas": {
+            "Transitions": 2,
+            "Rhetorical Synthesis": 3
+        }
+    },
+    "Math": {
+        "Algebra": {
+            "Systems of two linear equations in two variables": 2,
+            "Linear inequalities in one or two variables": 5
+        }
+    }
+}
