@@ -8,64 +8,80 @@ interface FilterCompProps {
     qty: number;
 }
 
-function DomainFilterLine({ name, enabled, btnCallback, inputCallback, qty }: FilterCompProps) {
+function DomainFilterLine({
+    name,
+    enabled,
+    btnCallback,
+    inputCallback,
+    qty,
+}: FilterCompProps) {
     const dropdownClass = "mr-2 hover:bg-gray-200 hover:cursor-pointer";
     // return <div className="flex border-t border-t-gray-700">
-    return <div className="flex justify-between px-4">
-        <div className="flex">
-            <button onClick={btnCallback} className={dropdownClass}>
-                <RightChevronSVG classNames={enabled ? "rotate-90": ""}/>
-            </button>
-            <h3>{name}</h3>
+    return (
+        <div className="flex justify-between px-4">
+            <div className="flex">
+                <button onClick={btnCallback} className={dropdownClass}>
+                    <RightChevronSVG classNames={enabled ? "rotate-90" : ""} />
+                </button>
+                <h3>{name}</h3>
+            </div>
+            <input
+                type="number"
+                value={qty}
+                className={`w-10 border-2 rounded-sm text-center px-1 ${enabled ? "hidden" : ""}`}
+                onChange={(e) => {
+                    const val = Number.parseInt(e.target.value);
+                    if (!isNaN(val)) {
+                        inputCallback(val);
+                    } else {
+                        alert("Only type numbers into the input boxes");
+                    }
+                }}
+            />
         </div>
-        <input
-            type="number"
-            value={qty}
-            className={`w-10 border-2 rounded-sm text-center px-1 ${enabled ? "hidden": "" }`}
-            onChange={e => {
-                const val = Number.parseInt(e.target.value);
-                if (!isNaN(val)) {
-                    inputCallback(val);
-                } else {
-                    alert("Only type numbers into the input boxes");
-                }
-            }}
-        />
-    </div>;
+    );
 }
 
-function SkillFilterLine({ name, enabled, btnCallback, inputCallback, qty }: FilterCompProps) {
+function SkillFilterLine({
+    name,
+    enabled,
+    btnCallback,
+    inputCallback,
+    qty,
+}: FilterCompProps) {
     const addCancelBtnClass = "mr-2 hover:bg-gray-200 hover:cursor-pointer";
-    const modifyBtn = enabled
-        ? <CancelCircleSVG classNames={`text-red-400 ${addCancelBtnClass}`} />
-        : <AddCircleSVG classNames={`text-green-600 ${addCancelBtnClass}`} />
-    const skillEnabledClass = enabled ? "" : "bg-gray-300"
+    const modifyBtn = enabled ? (
+        <CancelCircleSVG classNames={`text-red-400 ${addCancelBtnClass}`} />
+    ) : (
+        <AddCircleSVG classNames={`text-green-600 ${addCancelBtnClass}`} />
+    );
+    const skillEnabledClass = enabled ? "" : "bg-gray-300";
 
-    return <div
-        className={
-            `flex w-11/12 ml-auto py-2 justify-between px-4 my-1 rounded-lg ${skillEnabledClass}`
-        }>
-        <div className="flex">
-            <button onClick={btnCallback}>
-                {modifyBtn}
-            </button>
-            <p>{name}</p>
+    return (
+        <div
+            className={`flex w-11/12 ml-auto py-2 justify-between px-4 my-1 rounded-lg ${skillEnabledClass}`}
+        >
+            <div className="flex">
+                <button onClick={btnCallback}>{modifyBtn}</button>
+                <p>{name}</p>
+            </div>
+            <input
+                type="number"
+                value={qty}
+                className={`w-10 border-2 rounded-sm text-center px-1 ${enabled ? "" : "hidden"}`}
+                onChange={(e) => {
+                    const value = e.target.value;
+                    const numVal = Number.parseInt(value);
+                    if (!isNaN(numVal)) {
+                        inputCallback(numVal);
+                    } else {
+                        if (value.length > 0)
+                            alert("Only type numbers into the input boxes");
+                    }
+                }}
+            />
         </div>
-        <input
-            type="number"
-            value={qty}
-            className={`w-10 border-2 rounded-sm text-center px-1 ${enabled ? "" : "hidden"}`}
-            onChange={e => {
-                const value = e.target.value;
-                const numVal = Number.parseInt(value);
-                if (!isNaN(numVal)) {
-                    inputCallback(numVal);
-                } else {
-                    if (value.length > 0) alert("Only type numbers into the input boxes");
-                }
-            }}
-        />
-    </div>;
+    );
 }
 
 interface DictStrNum {
@@ -73,7 +89,7 @@ interface DictStrNum {
 }
 
 interface NestedDict {
-    [key: string]: DictStrNum
+    [key: string]: DictStrNum;
 }
 
 interface SkillFilter {
@@ -88,6 +104,7 @@ interface ExportData {
     totalQuestions: number;
     RW: NestedDict;
     Math: NestedDict;
+    chosenIds: string[];
 }
 
 class DomainFilter {
@@ -117,11 +134,17 @@ class DomainFilter {
     }
 }
 
-function renderDomainFilters(dfs: DomainFilter[],
+function renderDomainFilters(
+    dfs: DomainFilter[],
     domainBtnCallback: (domainName: string) => void,
     skillBtnCallback: (domainName: string, skillIndex: number) => void,
     domainInputCallback: (domainName: string, qty: number) => void,
-    skillInputCallback: (domainName: string, skillIndex: number, qty: number) => void) {
+    skillInputCallback: (
+        domainName: string,
+        skillIndex: number,
+        qty: number,
+    ) => void,
+) {
     const output = [];
     for (const [dI, df] of dfs.entries()) {
         const skillFilters = [];
@@ -130,35 +153,143 @@ function renderDomainFilters(dfs: DomainFilter[],
                 skillFilters.push(
                     <SkillFilterLine
                         key={`${dI},${sI}`}
-                        name={skill.name} enabled={skill.enabled}
+                        name={skill.name}
+                        enabled={skill.enabled}
                         qty={skill.qty}
                         btnCallback={() => {
                             skillBtnCallback(df.name, sI);
                         }}
-                        inputCallback={qty => skillInputCallback(df.name, sI, qty)}
-                    />
-                )
+                        inputCallback={(qty) =>
+                            skillInputCallback(df.name, sI, qty)
+                        }
+                    />,
+                );
             }
         }
 
-        output.push(<div key={dI} className="py-4">
-            <DomainFilterLine
-                name={df.name} enabled={df.enabled}
-                qty={df.qty}
-                btnCallback={() => domainBtnCallback(df.name)}
-                inputCallback={qty => domainInputCallback(df.name, qty)}
-            />
-            {skillFilters}
-        </div>);
+        output.push(
+            <div key={dI} className="py-4">
+                <DomainFilterLine
+                    name={df.name}
+                    enabled={df.enabled}
+                    qty={df.qty}
+                    btnCallback={() => domainBtnCallback(df.name)}
+                    inputCallback={(qty) => domainInputCallback(df.name, qty)}
+                />
+                {skillFilters}
+            </div>,
+        );
     }
 
     return <>{output}</>;
 }
 
+interface ChosenIdsDisplayProps {
+    id: string
+}
+
+function ChosenIdsDisplay({id}: ChosenIdsDisplayProps) {
+    return <span className="my-2 mr-3 border-2 border-gray-600 rounded-md px-3 py-1 flex content-center">
+        <button className="mr-2"> <CancelCircleSVG classNames="h-5"/> </button>
+        {id}
+    </span>
+}
+
+interface IndividualQIdsProps {
+    maxResults: number;
+    qIds: string[];
+    chosenIds: string[];
+    addToChosenList: (chosenId: string) => void;
+}
+
+function IndividualQIds({ maxResults, qIds, chosenIds, addToChosenList }: IndividualQIdsProps) {
+    const [value, setValue] = useState<string>("");
+    const [focusInd, setFocusInd] = useState<number>(-1);
+    const [showPopup, setShowPopup] = useState<boolean>(false);
+    // Search result examples
+    //  - https://www.w3schools.com/howto/howto_js_filter_lists.asp
+
+    const togglePopup = () => {
+        setShowPopup(!showPopup);
+        setFocusInd(showPopup ? 0 : -1);
+    }
+
+    let results = qIds
+        .filter((qI) => qI.startsWith(value))
+        .slice(0, maxResults);
+
+    const resultItems = results.map((r, i) => {
+        if (showPopup) {
+            const selected = i == focusInd ? "px-5 rounded-md bg-zinc-500" : "mx-5";
+            return (
+                <li className={selected + " my-3"} key={i}>
+                    <span className="font-bold">
+                        {r.substring(0, value.length)}
+                    </span>
+                    {r.substring(value.length)}
+                </li>
+            );
+        } else {
+            return;
+        }
+    });
+
+    return (
+        <div className="flex flex-col justify-between col-span-2 mb-4 border-b-2 pb-8">
+            <div className="flex w-full">
+                <input
+                    onFocus={togglePopup}
+                    onBlur={togglePopup}
+                    onKeyUp={(e) => {
+                        const el = e.target as HTMLInputElement;
+                        el.value = el.value.toLowerCase();
+                        setValue(el.value);
+
+                        if (e.key == "ArrowDown") {
+                            setFocusInd(Math.min(focusInd + 1, maxResults - 1));
+                        } else if (e.key == "ArrowUp") {
+                            setFocusInd(Math.max(focusInd - 1, 0));
+                        } else if (e.key == "Enter") {
+                            addToChosenList(results[focusInd]);
+                            // el.value = "";
+                            // setValue(el.value);
+                        }
+
+                        results = qIds
+                            .filter((qI) => qI.startsWith(value))
+                            .slice(0, maxResults);
+                    }}
+                    maxLength={8}
+                    placeholder="Add question IDs"
+                    type="text"
+                    className="border-2 border-gray-700 rounded-lg mr-6 flex-1 px-3 py-1"
+                />
+            </div>
+            <div className="relative">
+                {showPopup ? (
+                    <ul className="absolute w-fit px-4 rounded-lg bg-zinc-300">
+                        {resultItems}
+                    </ul>
+                ) : (
+                    <></>
+                )}
+            </div>
+
+            <div className="flex flex-wrap justify-center">
+                {chosenIds.map((cI, i) => (
+                    <ChosenIdsDisplay key={i} id={cI} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function App() {
     const [filters, setFilters] = useState<DomainFilter[]>([]);
     const [outputPath, setOutputPath] = useState<string>("");
+    const [specificIds, setSpecificIds] = useState<string[]>([]);
     const [exportContent, setExportContent] = useState<string>("");
+    const [allIds, setAllIds] = useState<string[]>([]);
 
     const rw = "Reading and Writing";
     const math = "Math";
@@ -201,58 +332,82 @@ export default function App() {
 
             setFilters(tempFilters);
         };
+
+        const fetchAllQIds = async () => {
+            const response = await fetch("http://localhost:8080/all-ids");
+            const resJSON = await response.json();
+            const qIds = resJSON["qIds"];
+            setAllIds(qIds);
+
+            console.log(`Received ${qIds.length} questions from backend`);
+        };
+
         fetchSkillTree();
+        fetchAllQIds();
     }, []);
 
     const skillBtnCallback = (domainName: string, skillIndex: number) => {
-        setFilters(filters.map(df => {
-            if (df.name === domainName) {
-                // Toggle (enable/disable)
-                df.skills[skillIndex].enabled = !df.skills[skillIndex].enabled;
-                return df;
-            } else {
-                return df;
-            }
-        }))
-    }
+        setFilters(
+            filters.map((df) => {
+                if (df.name === domainName) {
+                    // Toggle (enable/disable)
+                    df.skills[skillIndex].enabled =
+                        !df.skills[skillIndex].enabled;
+                    return df;
+                } else {
+                    return df;
+                }
+            }),
+        );
+    };
 
     const domainBtnCallback = (domainName: string) => {
-        setFilters(filters.map(df => {
-            if (df.name === domainName) {
-                // Toggle (enable/disable)
-                df.enabled = !df.enabled;
-                df.recomputeQty();
-                return df;
-            } else {
-                return df;
-            }
-        }))
-    }
+        setFilters(
+            filters.map((df) => {
+                if (df.name === domainName) {
+                    // Toggle (enable/disable)
+                    df.enabled = !df.enabled;
+                    df.recomputeQty();
+                    return df;
+                } else {
+                    return df;
+                }
+            }),
+        );
+    };
 
-    const skillInputCallback = (domainName: string, skillIndex: number, qty: number) => {
-        setFilters(filters.map(df => {
-            if (df.name === domainName) {
-                df.skills[skillIndex].qty = qty;
-                df.recomputeQty();
-                return df;
-            } else {
-                return df;
-            }
-        }))
+    const skillInputCallback = (
+        domainName: string,
+        skillIndex: number,
+        qty: number,
+    ) => {
+        setFilters(
+            filters.map((df) => {
+                if (df.name === domainName) {
+                    df.skills[skillIndex].qty = qty;
+                    df.recomputeQty();
+                    return df;
+                } else {
+                    return df;
+                }
+            }),
+        );
     };
 
     const domainInputCallback = (domainName: string, qty: number) => {
-        setFilters(filters.map(df => {
-            if (df.name === domainName) {
-                df.setQty(qty);
-                return df;
-            } else {
-                return df;
-            }
-        }))
+        setFilters(
+            filters.map((df) => {
+                if (df.name === domainName) {
+                    df.setQty(qty);
+                    return df;
+                } else {
+                    return df;
+                }
+            }),
+        );
     };
 
-    const exportBtnCallback = () => {
+    const exportSubmitCallback = () => {
         if (outputPath.length == 0) {
             alert("Please type output path for the pdf.");
             return;
@@ -267,10 +422,11 @@ export default function App() {
 
         // TODO: add some parsing to ensure that the pdf names are valid names
         const exportData: ExportData = {
-            "outputPath": path,
-            "totalQuestions": 0,
-            "RW": {},
-            "Math": {},
+            outputPath: path,
+            totalQuestions: specificIds.length,
+            RW: {},
+            Math: {},
+            chosenIds: specificIds,
         };
 
         for (const df of filters) {
@@ -279,9 +435,11 @@ export default function App() {
 
             if (df.enabled) {
                 df.recomputeQty();
-                df.skills.filter(s => s.enabled).forEach(s => {
-                    info[s.name] = s.qty;
-                });
+                df.skills
+                    .filter((s) => s.enabled)
+                    .forEach((s) => {
+                        info[s.name] = s.qty;
+                    });
             } else {
                 const len = df.skills.length;
                 const total = df.qty;
@@ -302,43 +460,69 @@ export default function App() {
             }
             exportData["totalQuestions"] += df.qty;
         }
-        setExportContent(JSON.stringify(exportData, null, 4));
+        const jsonData = JSON.stringify(exportData, null, 4);
+        setExportContent(jsonData);
+
+        fetch("http://localhost:8080/filter-req", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: jsonData,
+        }).then(() => {
+            // console.log(`http://localhost:8080/download`);
+            window.open(`http://localhost:8080/download`);
+        });
     };
 
-    return <div className="w-9/10 max-w-5xl mx-auto">
-        <div className="grid grid-cols-2 grid-rows-[fit-content(100%)_fit-content(100%)] justify-around">
-            <div className="w-full p-5">
-                <h2 className="text-center font-bold mb-4">{rw}</h2>
-                {renderDomainFilters(
-                    filters.filter(f => f.isRW),
-                    domainBtnCallback, skillBtnCallback,
-                    domainInputCallback, skillInputCallback
-                )}
-            </div>
-            <div className="w-full p-5">
-                <h2 className="text-center font-bold mb-4">{math}</h2>
-                {renderDomainFilters(
-                    filters.filter(f => !f.isRW),
-                    domainBtnCallback, skillBtnCallback,
-                    domainInputCallback, skillInputCallback
-                )}
-            </div>
-            <div className="my-3 flex h-fit justify-between col-span-2">
-                <div className="flex flex-1">
-                    <p className="w-fit">Output PDF filename:</p>
-                    <input
-                    type="text"
-                    onChange={e => setOutputPath(e.target.value) }
-                    className="px-4 mx-6 border-2 rounded-lg flex-1"
-                    />
+    return (
+        <div className="w-9/10 max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 grid-rows-[fit-content(100%)_fit-content(100%)] justify-around">
+                <div className="w-full p-5">
+                    <h2 className="text-center font-bold mb-4">{rw}</h2>
+                    {renderDomainFilters(
+                        filters.filter((f) => f.isRW),
+                        domainBtnCallback,
+                        skillBtnCallback,
+                        domainInputCallback,
+                        skillInputCallback,
+                    )}
                 </div>
-                <button
-                    onClick={exportBtnCallback}
-                    className="py-2 px-6 rounded-lg hover:cursor-pointer bg-blue-900 text-white">Export</button>
+                <div className="w-full p-5">
+                    <h2 className="text-center font-bold mb-4">{math}</h2>
+                    {renderDomainFilters(
+                        filters.filter((f) => !f.isRW),
+                        domainBtnCallback,
+                        skillBtnCallback,
+                        domainInputCallback,
+                        skillInputCallback,
+                    )}
+                </div>
+                <IndividualQIds chosenIds={specificIds} maxResults={5} qIds={allIds} addToChosenList={(id: string) => {
+                    if (!specificIds.includes(id)) setSpecificIds([...specificIds, id]);
+                    // const v = [...specificIds, id];
+                    // setSpecificIds(v);
+                    // console.log(v);
+                }} />
+                <div className="my-3 flex h-fit justify-between col-span-2">
+                    <div className="flex flex-1">
+                        <input
+                            type="text"
+                            placeholder="Output PDF filename"
+                            onChange={(e) => setOutputPath(e.target.value)}
+                            className="px-4 mr-6 border-2 rounded-lg flex-1"
+                        />
+                    </div>
+                    <button
+                        onClick={exportSubmitCallback}
+                        className="py-2 px-6 font-bold rounded-lg hover:cursor-pointer bg-blue-800 text-white"
+                    >
+                        Export
+                    </button>
+                </div>
             </div>
-        </div>
 
-        {
+            {/*{
             exportContent.length > 0
             ? <div className="mt-6">
                 <p className="mb-4">
@@ -356,8 +540,9 @@ export default function App() {
                 </div>
             </div>
             : <></>
-        }
-    </div>;
+        }*/}
+        </div>
+    );
 }
 
 interface IconSVGProps {
@@ -365,42 +550,86 @@ interface IconSVGProps {
 }
 
 // Source: https://lucide.dev/icons/circle-x
-function CancelCircleSVG({classNames}: IconSVGProps) {
-    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className={classNames}>
-        <circle cx="12" cy="12" r="10" />
-        <path d="m15 9-6 6" />
-        <path d="m9 9 6 6" />
-    </svg>;
+function CancelCircleSVG({ classNames }: IconSVGProps) {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={classNames}
+        >
+            <circle cx="12" cy="12" r="10" />
+            <path d="m15 9-6 6" />
+            <path d="m9 9 6 6" />
+        </svg>
+    );
 }
 
 // Source: https://lucide.dev/icons/circle-plus
-function AddCircleSVG({classNames}: IconSVGProps) {
-    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className={classNames}>
-        <circle cx="12" cy="12" r="10" />
-        <path d="M8 12h8" />
-        <path d="M12 8v8" />
-    </svg>;
+function AddCircleSVG({ classNames }: IconSVGProps) {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={classNames}
+        >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M8 12h8" />
+            <path d="M12 8v8" />
+        </svg>
+    );
 }
 
 // Source: https://lucide.dev/icons/chevron-right
-function RightChevronSVG({classNames}: IconSVGProps) {
-    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className={classNames}>
-        <path d="m9 18 6-6-6-6"/>
-    </svg>
+function RightChevronSVG({ classNames }: IconSVGProps) {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={classNames}
+        >
+            <path d="m9 18 6-6-6-6" />
+        </svg>
+    );
 }
 
 // Source: https://lucide.dev/icons/clipboard
 function ClipboardSVG() {
-    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className="">
-        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
-        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-    </svg>
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className=""
+        >
+            <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+        </svg>
+    );
 }

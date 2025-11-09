@@ -1,7 +1,7 @@
 from dataclasses import dataclass, asdict
 import datetime as dt
 from pathlib import Path
-import json, os, random, re, time
+import json, os, random, re, sys, time
 from typing import Literal
 
 import pandas as pd
@@ -249,17 +249,19 @@ def parse_all_ssqb_pdfs() -> None:
         json.dump(meta_info_list, f, indent=4)
 
 def import_parsed_info() -> list[SSQBInfo]:
-    df_list: list[pd.DataFrame] = []
-    dir: str = "./parsed"
-    for file_path in os.listdir(dir):
-        path = f"{dir}/{file_path}"
-        if Path(path).suffix != ".csv":
-            print(f"Ignoring other files found: '{path}'")
-            continue
+    # df_list: list[pd.DataFrame] = []
+    # NOTE: changed to using a combined csv file instead of six smaller ones
+    # dir: str = "./parsed"
+    # for file_path in os.listdir(dir):
+    #     path = f"{dir}/{file_path}"
+    #     if Path(path).suffix != ".csv":
+    #         print(f"Ignoring other files found: '{path}'")
+    #         continue
 
-        df_list.append(pd.read_csv(path))
+    #     df_list.append(pd.read_csv(path))
+    # all_df = pd.concat(df_list, ignore_index=True)
 
-    all_df = pd.concat(df_list, ignore_index=True)
+    all_df = pd.read_csv("./parsed/combined_infos.csv")
     ssqb_infos: list[SSQBInfo] = []
 
     for i in range(len(all_df)):
@@ -308,8 +310,10 @@ def create_question_set(json_path: str, ssqb_infos: list[SSQBInfo]) -> None:
 
     output_pdf_path: str = set_info["outputPath"]
     total_questions: int = set_info["totalQuestions"]
+    specific_ids: list[str] = set_info["chosenIds"]
     all_chosen: list[SSQBInfo] = []
 
+    # Subject based filtering
     for test in ["RW", "Math"]:
         for domain, skills_info in set_info[test].items():
             for skill, qty in skills_info.items():
@@ -328,6 +332,11 @@ def create_question_set(json_path: str, ssqb_infos: list[SSQBInfo]) -> None:
                 chosen_inds = random.choices(valid_qs_inds, k=min(qty, len(valid_qs_inds)))
                 all_chosen.extend([ssqb_infos[c_i] for c_i in chosen_inds])
 
+    # Specific id filtering
+    all_chosen_so_far = [ssqb.q_id for ssqb in all_chosen]
+    for ssqb in ssqb_infos:
+        if (ssqb.q_id in specific_ids) and (ssqb.q_id not in all_chosen_so_far):
+            all_chosen.append(ssqb)
 
     assert len(all_chosen) <= total_questions, (
         f"Requested questions ({total_questions}) && Provided questions ({len(all_chosen)})"
@@ -357,8 +366,48 @@ def gen_pdf_from_ssqb_infos(ssqb_infos: list[SSQBInfo], output_pdf_path: str) ->
 
     out_pdf.save(output_pdf_path)
 
+def usage(program: str) -> None:
+    print(f"USAGE: {program} [MODES] [ARGS]\n")
+    print("Modes:")
+    print("    qset [INPUT_JSON]  |  Generate question set given an input json for filtering")
+    print("    allids [OUT_JSON]  |  Get a json containing the id of all questions")
+
+def export_all_qids(ssqb_infos: list[SSQBInfo], out_path: str) -> None:
+    all_ids: list[str] = [ssqb.q_id for ssqb in ssqb_infos]
+    with open(out_path, "w") as f:
+        json.dump({"qIds": all_ids}, f, indent=4)
+
 if __name__ == "__main__":
-    parse_all_ssqb_pdfs()
-    ssqb_infos: list[SSQBInfo] = import_parsed_info()
-    create_question_set("sample_input.json", ssqb_infos)
+    if len(sys.argv) == 1:
+        usage(sys.argv[0])
+        sys.exit(1)
+
+    mode: str = sys.argv[1]
+    match mode:
+        case "qset":
+            if len(sys.argv) == 2:
+                print("ERROR: please provide input json to use for filtering.")
+                print("Try rerunning this command with the 'help' flag for more info.")
+                sys.exit(1)
+
+            ssqb_infos: list[SSQBInfo] = import_parsed_info()
+            out_json: str = sys.argv[2]
+            create_question_set(out_json, ssqb_infos)
+            print(f"Complete! Exported PDF to '{out_json}'")
+
+        case "allids":
+            if len(sys.argv) == 2:
+                print("ERROR: please provide output txt to export ids to.")
+                print("Try rerunning this command with the 'help' flag for more info.")
+                sys.exit(1)
+
+            ssqb_infos: list[SSQBInfo] = import_parsed_info()
+            out_txt: str = sys.argv[2]
+            export_all_qids(ssqb_infos, sys.argv[2])
+            print(f"Complete! Exported ids to '{out_txt}'")
+
+        case "help":
+            print(f"Unknown mode: '{mode}'")
+
+    # parse_all_ssqb_pdfs()
     # gen_skill_tree(ssqb_info, "skill-tree.json")
