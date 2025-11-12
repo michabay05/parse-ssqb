@@ -1,41 +1,41 @@
 [
     {
-        "parsed_at": "2025-11-02 18:45:27.164593",
+        "parsed_at": "2025-11-12 07:22:49.258912",
         "source_pdf": "./dedup/dedup-math-excluded-easy.pdf",
         "subject": "Math",
         "difficulty": "easy",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-02 18:45:27.344532",
+        "parsed_at": "2025-11-12 07:22:49.694030",
         "source_pdf": "./dedup/dedup-math-excluded-medium.pdf",
         "subject": "Math",
         "difficulty": "medium",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-02 18:45:27.636841",
+        "parsed_at": "2025-11-12 07:22:50.271647",
         "source_pdf": "./dedup/dedup-math-excluded-hard.pdf",
         "subject": "Math",
         "difficulty": "hard",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-02 18:45:27.855141",
+        "parsed_at": "2025-11-12 07:22:50.699241",
         "source_pdf": "./dedup/dedup-rw-excluded-easy.pdf",
         "subject": "RW",
         "difficulty": "easy",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-02 18:45:28.104465",
+        "parsed_at": "2025-11-12 07:22:51.018708",
         "source_pdf": "./dedup/dedup-rw-excluded-medium.pdf",
         "subject": "RW",
         "difficulty": "medium",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-02 18:45:28.353573",
+        "parsed_at": "2025-11-12 07:22:51.356394",
         "source_pdf": "./dedup/dedup-rw-excluded-hard.pdf",
         "subject": "RW",
         "difficulty": "hard",

@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict
 import datetime as dt
+import io
 from pathlib import Path
 import json, os, random, re, sys, time
 from typing import Literal
@@ -7,20 +8,31 @@ from typing import Literal
 import pandas as pd
 import fitz
 from pymupdf import Document, Page
+from PIL import Image
 
 # Code used to select all checkboxes
 # ======================================================
-# for (let i = 0; i < 16; i++) {
+# const delay = (ms) => {
+#     return new Promise(resolve => setTimeout(resolve, ms));
+# }
+# const clickAllBoxes = () => {
 #     document
 #         .getElementById("results-table")
 #         .querySelectorAll('input[type="checkbox"]')
 #         .forEach(checkbox => {
 #             checkbox.checked = true; // Check the checkbox
 #             checkbox.click(); // Simulate a click event
-#         });
-#     setTimeout(() => console.log("waiting..."), 15000);
-#     document.getElementById("undefined_next").click();
+#     });
 # }
+# (async () => {
+#     for (let i = 0; i < 33; i++) {
+#         clickAllBoxes();
+#         console.log(`Moving on from page ${i + 1}`);
+#         await delay(5000);
+#         document.getElementById("undefined_next").click();
+#     }
+#     clickAllBoxes();
+# })();
 
 Level = Literal["easy","medium", "hard"]
 
@@ -104,9 +116,57 @@ def is_page_empty(page: Page) -> bool:
 
     return not (bool(has_text) or bool(has_images))
 
+from pprint import pprint
+# def get_difficulty(page: Page, drawing_only: bool = False) -> Level | None:
+def get_difficulty(doc: Document, page: Page, drawing_only: bool = False) -> Level | None:
+    count: int = 0
+
+    if drawing_only:
+        # Look for this color
+        diff_d_color: tuple[float, float, float] = (0.0, 0.37254899740219116, 0.6274510025978088)
+        drawings = page.get_drawings()
+        for d in drawings:
+            if d["fill"] == diff_d_color:
+                count += 1
+    else:
+        found_usable: bool = False
+        # Look for this color
+        diff_i_color: tuple[int, int, int] = (0, 83, 155)
+        image_list = page.get_images(full=True)
+        assert len(image_list) > 0, "Can find difficulty; no image on the pdf"
+
+        for image_index, img in enumerate(image_list):
+            xref = img[0]
+            base_image = doc.extract_image(xref)
+            img_bytes = base_image["image"]
+            pil_img = Image.open(io.BytesIO(img_bytes))
+            if pil_img.width != 46:
+                continue
+
+            found_usable = True
+
+            # To determine the difficulty, I am going to sample 3 specific pixels
+            # and depending on its color, I will determine the page's labeled difficulty
+            y = int(pil_img.height / 2)
+            for x in [5, pil_img.width / 2, pil_img.width - 5]:
+                color = pil_img.getpixel((int(x), y))
+                assert isinstance(color, tuple)
+                if color == diff_i_color:
+                    count += 1
+
+        if not found_usable:
+            print(f"I could not find any good image to interpret the difficulty.")
+
+    match count:
+        case 1: return "easy"
+        case 2: return "medium"
+        case 3: return "hard"
+        case _: return None
+
 def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
     assert path in PDF_PATHS.keys(), f"Unknown path: '{path}'"
-    difficulty: str = PDF_PATHS[path].difficulty
+    # difficulty: str = PDF_PATHS[path].difficulty
+    # assert False, "Use new difficulty function above"
 
     doc: Document = fitz.open(path)
     last_page_ind: int = 0
@@ -139,6 +199,11 @@ def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
 
         last_page_ind = page_ind
         q_id: str = matches[0]
+
+        difficulty: Level | None = get_difficulty(doc, page, drawing_only=True)
+        if difficulty is None:
+            difficulty: Level | None = get_difficulty(doc, page, drawing_only=False)
+            assert difficulty is not None, f"[{path}, pg: {page_ind + 1}] Unable to find difficulty"
 
         label_infos = ' '.join(text[labels:].split())
         label_info_pat = r"Assessment (\w*) Test ([\w\s]*) Domain ([\w\s]*) Skill ([\w\s]*) D"
@@ -206,7 +271,7 @@ def dedup_ssqb_pdfs(pdf_path: str) -> Document:
 
     return dedup_doc
 
-def parse_all_ssqb_pdfs() -> None:
+def parse_all_ssqb_pdfs(out_csv: str) -> None:
     meta_info_list: list[dict] = []
     all_ssqb_infos: list[SSQBInfo] = []
 
@@ -243,7 +308,7 @@ def parse_all_ssqb_pdfs() -> None:
         timer.stop(f"Completed exporting '{orig_path}'\n-------------")
 
     combined_df: pd.DataFrame = ssqb_infos_to_df(all_ssqb_infos)
-    combined_df.to_csv("./parsed/combined_infos.csv", index=False)
+    combined_df.to_csv(out_csv, index=False)
 
     with open("meta_infos.json", "w") as f:
         json.dump(meta_info_list, f, indent=4)
@@ -369,8 +434,9 @@ def gen_pdf_from_ssqb_infos(ssqb_infos: list[SSQBInfo], output_pdf_path: str) ->
 def usage(program: str) -> None:
     print(f"USAGE: {program} [MODES] [ARGS]\n")
     print("Modes:")
-    print("    qset [INPUT_JSON]  |  Generate question set given an input json for filtering")
-    print("    allids [OUT_JSON]  |  Get a json containing the id of all questions")
+    print("        qset [INPUT_JSON]  |  Generate question set given an input json for filtering")
+    print("       allids [OUT_JSON]   |  Get a json containing the id of all questions")
+    print("  categorize [OUT_CSV]     |  Categorize all the questions and output a single csv")
 
 def export_all_qids(ssqb_infos: list[SSQBInfo], out_path: str) -> None:
     all_ids: list[str] = [ssqb.q_id for ssqb in ssqb_infos]
@@ -384,6 +450,16 @@ if __name__ == "__main__":
 
     mode: str = sys.argv[1]
     match mode:
+        case "categorize":
+            if len(sys.argv) == 2:
+                print("ERROR: please provide output csv to export parsed info into.")
+                print("Try rerunning this command with the 'help' flag for more info.")
+                sys.exit(1)
+
+            out_csv: str = sys.argv[2]
+            parse_all_ssqb_pdfs(out_csv)
+            print(f"Complete! Exported PDF info to '{out_csv}'")
+
         case "qset":
             if len(sys.argv) == 2:
                 print("ERROR: please provide input json to use for filtering.")

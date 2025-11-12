@@ -1,6 +1,6 @@
 {
     "outputPath": "sample.pdf",
-    "totalQuestions": 15,
+    "totalQuestions": 19,
     "RW": {
         "Information and Ideas": {
             "Inferences": 3
@@ -15,5 +15,12 @@
             "Systems of two linear equations in two variables": 2,
             "Linear inequalities in one or two variables": 5
         }
-    }
+    },
+    "chosenIds": [
+        "608eeb6e",
+        "b0fc3166",
+        "d9d83c02",
+        "dd797fe2",
+        "df32b09c"
+    ]
 }
