@@ -27,13 +27,17 @@ function DomainFilterLine({
             </div>
             <input
                 type="number"
-                value={qty}
+                placeholder="#"
+                // value={qty}
                 className={`w-10 border-2 rounded-sm text-center px-1 ${enabled ? "hidden" : ""}`}
                 onChange={(e) => {
                     const val = Number.parseInt(e.target.value);
                     if (!isNaN(val)) {
                         inputCallback(val);
-                    } else {
+                    }
+                }}
+                onBlur={(e) => {
+                    if (isNaN(Number.parseInt(e.target.value))) {
                         alert("Only type numbers into the input boxes");
                     }
                 }}
@@ -260,7 +264,7 @@ function IndividualQIds({ maxResults, qIds, chosenIds, addToChosenList }: Indivi
                             .slice(0, maxResults);
                     }}
                     maxLength={8}
-                    placeholder="Add question IDs"
+                    placeholder="Add specific question IDs"
                     type="text"
                     className="border-2 border-gray-700 rounded-lg mr-6 flex-1 px-3 py-1"
                 />
@@ -510,6 +514,9 @@ export default function App() {
                             type="text"
                             placeholder="Output PDF filename"
                             onChange={(e) => setOutputPath(e.target.value)}
+                            onKeyUp={(e) => {
+                                if (e.key == "Enter") exportSubmitCallback();
+                            }}
                             className="px-4 mr-6 border-2 rounded-lg flex-1"
                         />
                     </div>
