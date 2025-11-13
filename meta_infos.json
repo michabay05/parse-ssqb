@@ -1,44 +1,72 @@
 [
     {
-        "parsed_at": "2025-11-12 07:22:49.258912",
-        "source_pdf": "./dedup/dedup-math-excluded-easy.pdf",
-        "subject": "Math",
-        "difficulty": "easy",
+        "parsed_at": "2025-11-13 07:16:29.672178",
+        "source_pdf": "all-qs\\all-math-adv-math.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-13 07:16:32.140081",
+        "source_pdf": "all-qs\\all-math-algebra.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-13 07:16:34.916833",
+        "source_pdf": "all-qs\\all-math-geometry.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-13 07:16:36.255487",
+        "source_pdf": "all-qs\\all-math-prob-solv.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-13 07:16:37.630650",
+        "source_pdf": "all-qs\\all-rw-craft-structure.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-13 07:16:38.105034",
+        "source_pdf": "all-qs\\all-rw-english-conv.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-13 07:16:38.456482",
+        "source_pdf": "all-qs\\all-rw-expr-ideas.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-13 07:16:38.916819",
+        "source_pdf": "all-qs\\all-rw-info-ideas.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-13 07:16:39.729664",
+        "source_pdf": "all-excluded\\orig-math-excluded-easy.pdf",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-12 07:22:49.694030",
-        "source_pdf": "./dedup/dedup-math-excluded-medium.pdf",
-        "subject": "Math",
-        "difficulty": "medium",
+        "parsed_at": "2025-11-13 07:16:40.670052",
+        "source_pdf": "all-excluded\\orig-math-excluded-hard.pdf",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-12 07:22:50.271647",
-        "source_pdf": "./dedup/dedup-math-excluded-hard.pdf",
-        "subject": "Math",
-        "difficulty": "hard",
+        "parsed_at": "2025-11-13 07:16:41.888136",
+        "source_pdf": "all-excluded\\orig-math-excluded-medium.pdf",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-12 07:22:50.699241",
-        "source_pdf": "./dedup/dedup-rw-excluded-easy.pdf",
-        "subject": "RW",
-        "difficulty": "easy",
+        "parsed_at": "2025-11-13 07:16:43.213116",
+        "source_pdf": "all-excluded\\orig-rw-excluded-easy.pdf",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-12 07:22:51.018708",
-        "source_pdf": "./dedup/dedup-rw-excluded-medium.pdf",
-        "subject": "RW",
-        "difficulty": "medium",
+        "parsed_at": "2025-11-13 07:16:43.543703",
+        "source_pdf": "all-excluded\\orig-rw-excluded-hard.pdf",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-12 07:22:51.356394",
-        "source_pdf": "./dedup/dedup-rw-excluded-hard.pdf",
-        "subject": "RW",
-        "difficulty": "hard",
+        "parsed_at": "2025-11-13 07:16:43.946802",
+        "source_pdf": "all-excluded\\orig-rw-excluded-medium.pdf",
         "excluded": true
     }
 ]
