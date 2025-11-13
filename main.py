@@ -347,8 +347,8 @@ def import_parsed_info(path: str) -> list[SSQBInfo]:
 
     return ssqb_infos
 
-def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str) -> None:
-    tree: dict[str, dict[str, dict[str, list[int]]]] = {}
+def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str, w_difficulty: bool = False) -> None:
+    tree: dict[str, dict[str, dict]] = {}
     for info in ssqb_infos:
         if info.test not in tree.keys():
             tree[info.test] = {}
@@ -356,19 +356,26 @@ def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str) -> None:
         if info.domain not in tree[info.test].keys():
             tree[info.test][info.domain] = {}
 
-        if info.skill not in tree[info.test][info.domain]:
-            tree[info.test][info.domain][info.skill] = [0, 0, 0]
 
-        ind = -1
-        match info.level:
-            case "easy":
-                ind = 0
-            case "medium":
-                ind = 1
-            case "hard":
-                ind = 2
+        if w_difficulty:
+            if info.skill not in tree[info.test][info.domain]:
+                tree[info.test][info.domain][info.skill] = [0, 0, 0]
 
-        tree[info.test][info.domain][info.skill][ind] += 1
+            ind = -1
+            match info.level:
+                case "easy":
+                    ind = 0
+                case "medium":
+                    ind = 1
+                case "hard":
+                    ind = 2
+
+            tree[info.test][info.domain][info.skill][ind] += 1
+        else:
+            if info.skill not in tree[info.test][info.domain]:
+                tree[info.test][info.domain][info.skill] = 0
+
+            tree[info.test][info.domain][info.skill] += 1
 
     with open(output_json, "w") as f:
         json.dump(tree, f, indent=4)
