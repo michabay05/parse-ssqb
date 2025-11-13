@@ -116,25 +116,34 @@ def is_page_empty(page: Page) -> bool:
 
     return not (bool(has_text) or bool(has_images))
 
-from pprint import pprint
-# def get_difficulty(page: Page, drawing_only: bool = False) -> Level | None:
-def get_difficulty(doc: Document, page: Page, drawing_only: bool = False) -> Level | None:
+def get_difficulty(doc: Document, page: Page, drawing_only: bool) -> Level | None:
     count: int = 0
 
     if drawing_only:
         # Look for this color
         diff_d_color: tuple[float, float, float] = (0.0, 0.37254899740219116, 0.6274510025978088)
         drawings = page.get_drawings()
+        def close(a: float, b: float) -> bool:
+            return abs(a - b) < 5e-5
+
         for d in drawings:
-            if d["fill"] == diff_d_color:
+            color = d["fill"]
+            if color is None:
+                continue
+
+            if (close(color[0], diff_d_color[0])
+                and close(color[1], diff_d_color[1])
+                and close(color[2], diff_d_color[2])):
                 count += 1
     else:
-        found_usable: bool = False
         # Look for this color
         diff_i_color: tuple[int, int, int] = (0, 83, 155)
         image_list = page.get_images(full=True)
-        assert len(image_list) > 0, "Can find difficulty; no image on the pdf"
+        if len(image_list) == 0:
+            print("No images found.")
+            return None
 
+        found_usable: bool = False
         for image_index, img in enumerate(image_list):
             xref = img[0]
             base_image = doc.extract_image(xref)
@@ -164,10 +173,6 @@ def get_difficulty(doc: Document, page: Page, drawing_only: bool = False) -> Lev
         case _: return None
 
 def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
-    assert path in PDF_PATHS.keys(), f"Unknown path: '{path}'"
-    # difficulty: str = PDF_PATHS[path].difficulty
-    # assert False, "Use new difficulty function above"
-
     doc: Document = fitz.open(path)
     last_page_ind: int = 0
     q_infos: list[SSQBInfo] = []
@@ -271,41 +276,32 @@ def dedup_ssqb_pdfs(pdf_path: str) -> Document:
 
     return dedup_doc
 
-def parse_all_ssqb_pdfs(out_csv: str) -> None:
+def parse_all_ssqb_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> None:
     meta_info_list: list[dict] = []
     all_ssqb_infos: list[SSQBInfo] = []
 
-    for orig_path, info in PDF_PATHS.items():
-        subject = info.subject
-        difficulty = info.difficulty
-        assert subject in ["Math", "RW"], f"Subject('{subject}') must be either Math or RW."
-        assert difficulty in ["easy", "medium", "hard"], (
-            f"Difficulty('{difficulty}') must be easy, medium, or hard"
-        )
-
+    for path, excluded in file_paths:
         meta_info_list.append({
             "parsed_at": str(dt.datetime.now()),
-            "source_pdf": orig_path,
-            "subject": subject,
-            "difficulty": difficulty,
-            "excluded": info.excluded,
+            "source_pdf": path,
+            "excluded": excluded,
         })
 
-        output_name = pdf_parsed_output_name(info)
+        # output_name = pdf_parsed_output_name(path)
         timer.start()
-        ssqb_infos: list[SSQBInfo] = parse_ssqb_pdfs(orig_path)
+        ssqb_infos: list[SSQBInfo] = parse_ssqb_pdfs(path)
         all_ssqb_infos.extend(ssqb_infos)
-        df: pd.DataFrame = ssqb_infos_to_df(ssqb_infos)
-        timer.stop(f"Completed parsing '{orig_path}'")
+        timer.stop(f"Completed parsing '{path}'")
 
         # NOTE: deduplication does not have to always happen
-        # dedup_doc: Document = dedup_ssqb_pdfs(orig_path)
-        # dedup_doc.save(dedup_pdf_output_path(orig_path))
+        # dedup_doc: Document = dedup_ssqb_pdfs(path)
+        # dedup_doc.save(dedup_pdf_output_path(path))
 
-        output_path = f"{output_name.lower()}.csv"
-        df.to_csv(output_path, index=False)
+        # For now, I don't think I need to export each file individually
+        # output_path = f"{output_name.lower()}.csv"
+        # df.to_csv(output_path, index=False)
 
-        timer.stop(f"Completed exporting '{orig_path}'\n-------------")
+        timer.stop(f"Completed exporting '{path}'\n-------------")
 
     combined_df: pd.DataFrame = ssqb_infos_to_df(all_ssqb_infos)
     combined_df.to_csv(out_csv, index=False)
@@ -313,7 +309,7 @@ def parse_all_ssqb_pdfs(out_csv: str) -> None:
     with open("meta_infos.json", "w") as f:
         json.dump(meta_info_list, f, indent=4)
 
-def import_parsed_info() -> list[SSQBInfo]:
+def import_parsed_info(path: str) -> list[SSQBInfo]:
     # df_list: list[pd.DataFrame] = []
     # NOTE: changed to using a combined csv file instead of six smaller ones
     # dir: str = "./parsed"
@@ -326,7 +322,7 @@ def import_parsed_info() -> list[SSQBInfo]:
     #     df_list.append(pd.read_csv(path))
     # all_df = pd.concat(df_list, ignore_index=True)
 
-    all_df = pd.read_csv("./parsed/combined_infos.csv")
+    all_df = pd.read_csv(path)
     ssqb_infos: list[SSQBInfo] = []
 
     for i in range(len(all_df)):
@@ -352,7 +348,7 @@ def import_parsed_info() -> list[SSQBInfo]:
     return ssqb_infos
 
 def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str) -> None:
-    tree: dict[str, dict[str, dict[str, int]]] = {}
+    tree: dict[str, dict[str, dict[str, list[int]]]] = {}
     for info in ssqb_infos:
         if info.test not in tree.keys():
             tree[info.test] = {}
@@ -361,9 +357,18 @@ def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str) -> None:
             tree[info.test][info.domain] = {}
 
         if info.skill not in tree[info.test][info.domain]:
-            tree[info.test][info.domain][info.skill] = 0
+            tree[info.test][info.domain][info.skill] = [0, 0, 0]
 
-        tree[info.test][info.domain][info.skill] += 1
+        ind = -1
+        match info.level:
+            case "easy":
+                ind = 0
+            case "medium":
+                ind = 1
+            case "hard":
+                ind = 2
+
+        tree[info.test][info.domain][info.skill][ind] += 1
 
     with open(output_json, "w") as f:
         json.dump(tree, f, indent=4)
@@ -434,9 +439,11 @@ def gen_pdf_from_ssqb_infos(ssqb_infos: list[SSQBInfo], output_pdf_path: str) ->
 def usage(program: str) -> None:
     print(f"USAGE: {program} [MODES] [ARGS]\n")
     print("Modes:")
-    print("        qset [INPUT_JSON]  |  Generate question set given an input json for filtering")
-    print("       allids [OUT_JSON]   |  Get a json containing the id of all questions")
-    print("  categorize [OUT_CSV]     |  Categorize all the questions and output a single csv")
+    print("        qset <INPUT_JSON> |  Generate question set given an input json for filtering")
+    print("      allids <OUT_JSON>   |  Get a json containing the id of all questions")
+    print("  categorize <OUT_CSV>    |  Categorize all the questions and output a single csv")
+    print("   skilltree              |  Generate a skill tree with quantity; save into json")
+    print("        help              |  Get this help message")
 
 def export_all_qids(ssqb_infos: list[SSQBInfo], out_path: str) -> None:
     all_ids: list[str] = [ssqb.q_id for ssqb in ssqb_infos]
@@ -456,8 +463,14 @@ if __name__ == "__main__":
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
+            file_paths: list[tuple[str, bool]] = []
+            for dir in ["./all-qs", "./all-excluded"]:
+                for aqp in os.listdir(dir):
+                    p = Path(dir) / aqp
+                    file_paths.append((str(p), dir == "./all-excluded"))
+
             out_csv: str = sys.argv[2]
-            parse_all_ssqb_pdfs(out_csv)
+            parse_all_ssqb_pdfs(file_paths, out_csv)
             print(f"Complete! Exported PDF info to '{out_csv}'")
 
         case "qset":
@@ -466,7 +479,7 @@ if __name__ == "__main__":
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
-            ssqb_infos: list[SSQBInfo] = import_parsed_info()
+            ssqb_infos: list[SSQBInfo] = import_parsed_info("./all-q-parsed.csv")
             out_json: str = sys.argv[2]
             create_question_set(out_json, ssqb_infos)
             print(f"Complete! Exported PDF to '{out_json}'")
@@ -477,12 +490,21 @@ if __name__ == "__main__":
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
-            ssqb_infos: list[SSQBInfo] = import_parsed_info()
+            ssqb_infos: list[SSQBInfo] = import_parsed_info("./all-q-parsed.csv")
             out_txt: str = sys.argv[2]
             export_all_qids(ssqb_infos, sys.argv[2])
             print(f"Complete! Exported ids to '{out_txt}'")
 
+        case "skilltree":
+            ssqb_infos: list[SSQBInfo] = import_parsed_info("./all-q-parsed.csv")
+            out_json: str = "skill-tree.json"
+            gen_skill_tree(ssqb_infos, out_json)
+            print(f"Complete! Exported skill tree to '{out_json}'")
+
         case "help":
+            usage(sys.argv[0])
+
+        case "_":
             print(f"Unknown mode: '{mode}'")
 
     # parse_all_ssqb_pdfs()
