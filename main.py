@@ -25,10 +25,10 @@ from PIL import Image
 #     });
 # }
 # (async () => {
-#     for (let i = 0; i < 33; i++) {
+#     for (let i = 0; i < _; i++) {
 #         clickAllBoxes();
 #         console.log(`Moving on from page ${i + 1}`);
-#         await delay(5000);
+#         await delay(3000);
 #         document.getElementById("undefined_next").click();
 #     }
 #     clickAllBoxes();
@@ -53,58 +53,67 @@ class Timer:
 
         print(f"[{diff_str:>10}] {msg}")
 
-@dataclass
-class FileInfo:
-    subject: str
-    difficulty: Level
-    excluded: bool
+# @dataclass
+# class FileInfo:
+#     subject: str
+#     difficulty: Level
+#     excluded: bool
 
+# def pdf_parsed_output_name(info: FileInfo) -> str:
+#     excluded_str = "excluded" if info.excluded else ""
 
-def pdf_parsed_output_name(info: FileInfo) -> str:
-    excluded_str = "excluded" if info.excluded else ""
+#     return f"./parsed/{info.subject}-{excluded_str}-{info.difficulty}"
 
-    return f"./parsed/{info.subject}-{excluded_str}-{info.difficulty}"
+# def dedup_pdf_output_path(orig_pdf_path: str) -> str:
+#     return f"./dedup/dedup-{'-'.join(orig_pdf_path.split('-')[1:])}"
 
-def dedup_pdf_output_path(orig_pdf_path: str) -> str:
-    return f"./dedup/dedup-{'-'.join(orig_pdf_path.split('-')[1:])}"
-
-PDF_PATHS: dict[str, FileInfo] = {
-    "./dedup/dedup-math-excluded-easy.pdf": FileInfo("Math", "easy", True),
-    "./dedup/dedup-math-excluded-medium.pdf": FileInfo("Math", "medium", True),
-    "./dedup/dedup-math-excluded-hard.pdf": FileInfo("Math", "hard", True),
-    "./dedup/dedup-rw-excluded-easy.pdf": FileInfo("RW", "easy", True),
-    "./dedup/dedup-rw-excluded-medium.pdf": FileInfo("RW", "medium", True),
-    "./dedup/dedup-rw-excluded-hard.pdf": FileInfo("RW", "hard", True)
-}
+# PDF_PATHS: dict[str, FileInfo] = {
+#     "./dedup/dedup-math-excluded-easy.pdf": FileInfo("Math", "easy", True),
+#     "./dedup/dedup-math-excluded-medium.pdf": FileInfo("Math", "medium", True),
+#     "./dedup/dedup-math-excluded-hard.pdf": FileInfo("Math", "hard", True),
+#     "./dedup/dedup-rw-excluded-easy.pdf": FileInfo("RW", "easy", True),
+#     "./dedup/dedup-rw-excluded-medium.pdf": FileInfo("RW", "medium", True),
+#     "./dedup/dedup-rw-excluded-hard.pdf": FileInfo("RW", "hard", True)
+# }
 
 timer: Timer = Timer()
 PAGE_DELIMITER: str = "_"
 
+def pages_as_str(page_inds: list[int]) -> str:
+    if len(page_inds) == 0:
+        return ""
+
+    pg_str: str = str(page_inds[0] + 1)
+    for pg_ind in page_inds[1:]:
+        pg_str += PAGE_DELIMITER + str(pg_ind + 1)
+
+    return pg_str
+
 @dataclass
-class SSQBInfo:
+class QInfo:
     q_id: str
     test: str
     domain: str
     level: Level
     skill: str
     src_pdf: str
-    page_inds: list[int]
+    pg_inds: list[int]
 
-    def pages_as_str(self) -> str:
-        if len(self.page_inds) == 1:
-            return str(self.page_inds[0] + 1)
-        elif len(self.page_inds) == 2:
-            return f"{self.page_inds[0] + 1}{PAGE_DELIMITER}{self.page_inds[1] + 1}"
-        else:
-            assert False, f"The page range should be a single number or formatted as '<START>{PAGE_DELIMITER}<END>'"
+    # def __eq__(self, other) -> bool:
+    #     # NOTE: Equality will be detected based on the ids; therefore this function
+    #     #       assumes that each question has a UNIQUE id
+    #     return isinstance(other, QInfo) and self.q_id == other.q_id
 
-    def __eq__(self, other) -> bool:
-        # NOTE: Equality will be detected based on the ids; therefore this function
-        #       assumes that each question has a UNIQUE id
-        return isinstance(other, SSQBInfo) and self.q_id == other.q_id
+    # def __hash__(self) -> int:
+    #     return hash((self.q_id, self.domain, self.skill, self.page_inds[0]))
 
-    def __hash__(self) -> int:
-        return hash((self.q_id, self.domain, self.skill, self.page_inds[0]))
+@dataclass
+class AnsInfo:
+    q_id: str
+    answer: str
+    ans_src_pdf: str
+    pg_inds: list[int]
+
 
 def is_page_empty(page: Page) -> bool:
     page_text = page.get_text()
@@ -172,10 +181,10 @@ def get_difficulty(doc: Document, page: Page, drawing_only: bool) -> Level | Non
         case 3: return "hard"
         case _: return None
 
-def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
+def parse_question_pdf(path: str) -> list[QInfo]:
     doc: Document = fitz.open(path)
-    last_page_ind: int = 0
-    q_infos: list[SSQBInfo] = []
+    q_infos: list[QInfo] = []
+    curr: QInfo = QInfo("", "", "", "easy", "", "", [])
 
     for page_ind in range(len(doc)):
         page = doc.load_page(page_ind)
@@ -186,49 +195,106 @@ def parse_ssqb_pdfs(path: str) -> list[SSQBInfo]:
         text = page.get_text()
         assert isinstance(text, str)
 
-        id: int = text.find("ID: ")
-        labels: int = text.find("Assessment")
+        q_id_pat: str = r"Question ID ([0-9a-f]{8})"
+        matches = re.findall(q_id_pat, text)
+        if len(matches) == 1:
+            if curr.q_id != "":
+                q_infos.append(QInfo(
+                    q_id=curr.q_id,
+                    test=curr.test,
+                    domain=curr.domain,
+                    skill=curr.skill,
+                    src_pdf=path,
+                    level=curr.level,
+                    pg_inds=curr.pg_inds
+                ))
+                curr: QInfo = QInfo("", "", "", "easy", "", "", [])
 
-        q_id_pat = r"ID: ([0-9a-f]+)"
-        matches = re.findall(q_id_pat, text[id:labels])
-        if len(matches) != 1:
-            # This probably means that one question takes up multiple pages
-            # print(f"No ID found in page {page_num + 1}")
-            continue
+            curr.q_id = matches[0]
 
-        page_inds: list[int] = []
-        if page_ind - last_page_ind > 1:
-            page_inds = [last_page_ind + 1, page_ind]
+            difficulty: Level | None = get_difficulty(doc, page, drawing_only=True)
+            if difficulty is None:
+                # This is a backup way of finding the difficulty; I should be to find out the
+                # difficulty purely through its drawings, but you never know . . .
+                difficulty: Level | None = get_difficulty(doc, page, drawing_only=False)
+                assert difficulty is not None, f"[{path}, pg: {page_ind + 1}] Unable to find difficulty"
+
+            curr.level = difficulty
         else:
-            page_inds = [page_ind]
+            if curr.q_id == "":
+                # This probably means that one question takes up multiple pages
+                # print(f"No ID found in page {page_num + 1}")
+                continue
 
-        last_page_ind = page_ind
-        q_id: str = matches[0]
+        curr.pg_inds.append(page_ind)
 
-        difficulty: Level | None = get_difficulty(doc, page, drawing_only=True)
-        if difficulty is None:
-            difficulty: Level | None = get_difficulty(doc, page, drawing_only=False)
-            assert difficulty is not None, f"[{path}, pg: {page_ind + 1}] Unable to find difficulty"
-
-        label_infos = ' '.join(text[labels:].split())
+        labels_start_ind: int = text.find("Assessment")
+        label_infos = ' '.join(text[labels_start_ind:].split())
         label_info_pat = r"Assessment (\w*) Test ([\w\s]*) Domain ([\w\s]*) Skill ([\w\s]*) D"
         matches = re.findall(label_info_pat, label_infos)
-        for mat in matches:
-            assessment, test, domain, skill = mat
+        if len(matches) == 1:
+            assessment, test, domain, skill = matches[0]
+            # NOTE: this is the same for all questions regardless of difficulty or subject
+            # I'm just using it as a sanity check.
             assert assessment == "SAT"
-            q_infos.append(SSQBInfo(
-                q_id=q_id,
-                test=test,
-                domain=domain,
-                skill=skill,
-                src_pdf=path,
-                level=difficulty,
-                page_inds=page_inds
-            ))
+
+            curr.test = test
+            curr.domain = domain
+            curr.skill = skill
 
     return q_infos
 
-def ssqb_infos_to_df(ssqb_infos: list[SSQBInfo]) -> pd.DataFrame:
+def parse_answer_pdf(path: str) -> list[AnsInfo]:
+    # NOTE: I have the following patterns in case the first one does not match
+    # 1: Should be common for MCQs and FRQs
+    first_pat: str = r"Correct Answer:[\s]([A-Za-z0-9.\/]+)"
+    # 2: Common for MCQs only
+    second_pat: str = r"Choice ([ABCDE]{1}) is correct\."
+    # 3: Common for FRQs only
+    third_pat: str = r"The correct answer is ([A-Za-z0-9.\/]+)\."
+
+    doc: Document = fitz.open(path)
+    a_infos: list[AnsInfo] = []
+    curr: AnsInfo = AnsInfo("", "", "", [])
+
+    for page_ind in range(len(doc)):
+        page = doc.load_page(page_ind)
+        if is_page_empty(page):
+            continue
+
+        text = page.get_text()
+        assert isinstance(text, str)
+
+        q_id_pat: str = r"Question ID ([0-9a-f]{8})"
+        matches = re.findall(q_id_pat, text)
+        if len(matches) == 1:
+            if curr.q_id != "":
+                a_infos.append(AnsInfo(curr.q_id, curr.answer, path, curr.pg_inds))
+                curr = AnsInfo("", "", "", [])
+
+            curr.q_id = matches[0]
+        else:
+            if curr.q_id == "":
+                # This probably means that one question takes up multiple pages
+                # print(f"No ID found in page {page_num + 1}")
+                continue
+
+        curr.pg_inds.append(page_ind)
+
+        matches = []
+        for pattern in [first_pat, second_pat, third_pat]:
+        # for (i, pattern) in enumerate([first_pat, second_pat, third_pat]):
+            matches = re.findall(pattern, text)
+            if len(matches) > 0:
+                # print(f"Using pattern {i + 1}")
+                break
+
+        if len(matches) == 1:
+            curr.answer = matches[0]
+
+    return a_infos
+
+def q_infos_to_df(ssqb_infos: list[QInfo]) -> pd.DataFrame:
     # Convert to dataframe
     data: dict = {
         "ID": [],
@@ -241,7 +307,7 @@ def ssqb_infos_to_df(ssqb_infos: list[SSQBInfo]) -> pd.DataFrame:
     }
     for info in ssqb_infos:
         data["ID"].append(info.q_id)
-        data["Pages"].append(info.pages_as_str())
+        data["Pages"].append(pages_as_str(info.pg_inds))
         data["Difficulty"].append(info.level)
         data["Test"].append(info.test)
         data["Domain"].append(info.domain)
@@ -250,11 +316,27 @@ def ssqb_infos_to_df(ssqb_infos: list[SSQBInfo]) -> pd.DataFrame:
 
     return pd.DataFrame(data)
 
-def dedup_ssqb_pdfs(pdf_path: str) -> Document:
-    ssqb_infos: list[SSQBInfo] = parse_ssqb_pdfs(pdf_path)
+def a_infos_to_df(a_infos: list[AnsInfo]) -> pd.DataFrame:
+    # Convert to dataframe
+    data: dict = {
+        "ID": [],
+        "Answer": [],
+        "Pages": [],
+        "Answer_PDF": [],
+    }
+    for a in a_infos:
+        data["ID"].append(a.q_id)
+        data["Answer"].append(a.answer)
+        data["Pages"].append(pages_as_str(a.pg_inds))
+        data["Answer_PDF"].append(a.ans_src_pdf)
+
+    return pd.DataFrame(data)
+
+def dedup_q_pdfs(pdf_path: str) -> Document:
+    ssqb_infos: list[QInfo] = parse_question_pdf(pdf_path)
     assert len(ssqb_infos) > 0, "Parsed ssqb info should have some objects in it."
 
-    dedup_ssqb: list[SSQBInfo] = []
+    dedup_ssqb: list[QInfo] = []
     for ssqb in ssqb_infos:
         if ssqb not in dedup_ssqb:
             dedup_ssqb.append(ssqb)
@@ -263,7 +345,7 @@ def dedup_ssqb_pdfs(pdf_path: str) -> Document:
     dedup_doc: Document = Document()
 
     for ssqb in dedup_ssqb:
-        page_nos: list[int] = ssqb.page_inds
+        page_nos: list[int] = ssqb.pg_inds
         if len(page_nos) == 1:
             page_nos.append(page_nos[0])
 
@@ -276,9 +358,9 @@ def dedup_ssqb_pdfs(pdf_path: str) -> Document:
 
     return dedup_doc
 
-def parse_all_ssqb_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> None:
+def parse_all_q_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> None:
     meta_info_list: list[dict] = []
-    all_ssqb_infos: list[SSQBInfo] = []
+    all_q_infos: list[QInfo] = []
 
     for path, excluded in file_paths:
         meta_info_list.append({
@@ -289,27 +371,56 @@ def parse_all_ssqb_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> Non
 
         # output_name = pdf_parsed_output_name(path)
         timer.start()
-        ssqb_infos: list[SSQBInfo] = parse_ssqb_pdfs(path)
-        all_ssqb_infos.extend(ssqb_infos)
+        q_infos: list[QInfo] = parse_question_pdf(path)
+        all_q_infos.extend(q_infos)
         timer.stop(f"Completed parsing '{path}'")
 
         # NOTE: deduplication does not have to always happen
         # dedup_doc: Document = dedup_ssqb_pdfs(path)
         # dedup_doc.save(dedup_pdf_output_path(path))
 
-        # For now, I don't think I need to export each file individually
+        # NOTE: For now, I don't think I need to export parsed info for each file individually
         # output_path = f"{output_name.lower()}.csv"
         # df.to_csv(output_path, index=False)
 
-        timer.stop(f"Completed exporting '{path}'\n-------------")
-
-    combined_df: pd.DataFrame = ssqb_infos_to_df(all_ssqb_infos)
+    combined_df: pd.DataFrame = q_infos_to_df(all_q_infos)
     combined_df.to_csv(out_csv, index=False)
 
-    with open("meta_infos.json", "w") as f:
+    with open("q_meta_infos.json", "w") as f:
         json.dump(meta_info_list, f, indent=4)
 
-def import_parsed_info(path: str) -> list[SSQBInfo]:
+def parse_all_a_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> None:
+    meta_info_list: list[dict] = []
+    all_a_infos: list[AnsInfo] = []
+
+    for path, excluded in file_paths:
+        meta_info_list.append({
+            "parsed_at": str(dt.datetime.now()),
+            "source_pdf": path,
+            "excluded": excluded,
+        })
+
+        # output_name = pdf_parsed_output_name(path)
+        timer.start()
+        a_infos: list[AnsInfo] = parse_answer_pdf(path)
+        all_a_infos.extend(a_infos)
+        timer.stop(f"Completed parsing '{path}'")
+
+        # NOTE: deduplication does not have to always happen
+        # dedup_doc: Document = dedup_ssqb_pdfs(path)
+        # dedup_doc.save(dedup_pdf_output_path(path))
+
+        # NOTE: For now, I don't think I need to export parsed info for each file individually
+        # output_path = f"{output_name.lower()}.csv"
+        # df.to_csv(output_path, index=False)
+
+    combined_df: pd.DataFrame = a_infos_to_df(all_a_infos)
+    combined_df.to_csv(out_csv, index=False)
+
+    with open("a_meta_infos.json", "w") as f:
+        json.dump(meta_info_list, f, indent=4)
+
+def import_q_parsed_info(path: str) -> list[QInfo]:
     # df_list: list[pd.DataFrame] = []
     # NOTE: changed to using a combined csv file instead of six smaller ones
     # dir: str = "./parsed"
@@ -323,7 +434,7 @@ def import_parsed_info(path: str) -> list[SSQBInfo]:
     # all_df = pd.concat(df_list, ignore_index=True)
 
     all_df = pd.read_csv(path)
-    ssqb_infos: list[SSQBInfo] = []
+    ssqb_infos: list[QInfo] = []
 
     for i in range(len(all_df)):
         pages_str = str(all_df["Pages"][i]) # type: ignore
@@ -335,19 +446,19 @@ def import_parsed_info(path: str) -> list[SSQBInfo]:
         if len(pages_str) == 2:
             page_inds.append(int(pages_str[1]) - 1)
 
-        ssqb_infos.append(SSQBInfo(
+        ssqb_infos.append(QInfo(
             q_id=all_df["ID"][i], # type: ignore
             test=all_df["Test"][i], # type: ignore
             domain=all_df["Domain"][i], # type: ignore
             level=all_df["Difficulty"][i], # type: ignore
             skill=all_df["Skill"][i], # type: ignore
             src_pdf=all_df["Source_PDF"][i], # type: ignore
-            page_inds=page_inds
+            pg_inds=page_inds
         ))
 
     return ssqb_infos
 
-def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str, w_difficulty: bool = False) -> None:
+def gen_skill_tree(ssqb_infos: list[QInfo], output_json: str, w_difficulty: bool = False) -> None:
     tree: dict[str, dict[str, dict]] = {}
     for info in ssqb_infos:
         if info.test not in tree.keys():
@@ -380,7 +491,7 @@ def gen_skill_tree(ssqb_infos: list[SSQBInfo], output_json: str, w_difficulty: b
     with open(output_json, "w") as f:
         json.dump(tree, f, indent=4)
 
-def create_question_set(json_path: str, ssqb_infos: list[SSQBInfo]) -> None:
+def create_question_set(json_path: str, ssqb_infos: list[QInfo]) -> None:
     # The information about the question set's composition is found from the json
     with open(json_path, "r") as f:
         set_info = json.load(f)
@@ -388,7 +499,7 @@ def create_question_set(json_path: str, ssqb_infos: list[SSQBInfo]) -> None:
     output_pdf_path: str = set_info["outputPath"]
     total_questions: int = set_info["totalQuestions"]
     specific_ids: list[str] = set_info["chosenIds"]
-    all_chosen: list[SSQBInfo] = []
+    all_chosen: list[QInfo] = []
 
     # Subject based filtering
     for test in ["RW", "Math"]:
@@ -420,7 +531,7 @@ def create_question_set(json_path: str, ssqb_infos: list[SSQBInfo]) -> None:
     )
     gen_pdf_from_ssqb_infos(all_chosen, output_pdf_path)
 
-def gen_pdf_from_ssqb_infos(ssqb_infos: list[SSQBInfo], output_pdf_path: str) -> None:
+def gen_pdf_from_ssqb_infos(ssqb_infos: list[QInfo], output_pdf_path: str) -> None:
     out_pdf: Document = Document()
 
     print(f"Saving {len(ssqb_infos)} questions...")
@@ -431,7 +542,7 @@ def gen_pdf_from_ssqb_infos(ssqb_infos: list[SSQBInfo], output_pdf_path: str) ->
             path_to_docs[ssqb.src_pdf] = fitz.open(ssqb.src_pdf)
 
         doc: Document = path_to_docs[ssqb.src_pdf]
-        page_nos: list[int] = ssqb.page_inds
+        page_nos: list[int] = ssqb.pg_inds
         if len(page_nos) == 1:
             page_nos.append(page_nos[0])
 
@@ -448,11 +559,12 @@ def usage(program: str) -> None:
     print("Modes:")
     print("        qset <INPUT_JSON> |  Generate question set given an input json for filtering")
     print("      allids <OUT_JSON>   |  Get a json containing the id of all questions")
-    print("  categorize <OUT_CSV>    |  Categorize all the questions and output a single csv")
+    print("    parse-qs <OUT_CSV>    |  Categorize questions pdfs and output a single csv")
+    print("   parse-as <OUT_CSV>    |  Categorize answers pdfs and output a single csv")
     print("   skilltree              |  Generate a skill tree with quantity; save into json")
     print("        help              |  Get this help message")
 
-def export_all_qids(ssqb_infos: list[SSQBInfo], out_path: str) -> None:
+def export_all_qids(ssqb_infos: list[QInfo], out_path: str) -> None:
     all_ids: list[str] = [ssqb.q_id for ssqb in ssqb_infos]
     with open(out_path, "w") as f:
         json.dump({"qIds": all_ids}, f, indent=4)
@@ -464,21 +576,38 @@ if __name__ == "__main__":
 
     mode: str = sys.argv[1]
     match mode:
-        case "categorize":
+        case "parse-qs":
             if len(sys.argv) == 2:
                 print("ERROR: please provide output csv to export parsed info into.")
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
             file_paths: list[tuple[str, bool]] = []
-            for dir in ["./all-qs", "./all-excluded"]:
+            for dir_ind, dir in enumerate(["./alls/questions/", "./excludeds/questions/"]):
                 for aqp in os.listdir(dir):
                     p = Path(dir) / aqp
-                    file_paths.append((str(p), dir == "./all-excluded"))
+                    file_paths.append((str(p), dir_ind == 1))
 
             out_csv: str = sys.argv[2]
-            parse_all_ssqb_pdfs(file_paths, out_csv)
-            print(f"Complete! Exported PDF info to '{out_csv}'")
+            parse_all_q_pdfs(file_paths, out_csv)
+            print(f"Complete! Exported question PDFs info to '{out_csv}'")
+
+        case "parse-as":
+            if len(sys.argv) == 2:
+                print("ERROR: please provide output csv to export parsed info into.")
+                print("Try rerunning this command with the 'help' flag for more info.")
+                sys.exit(1)
+
+            file_paths: list[tuple[str, bool]] = []
+            for dir_ind, dir in enumerate(["./alls/answers/", "./excludeds/answers/"]):
+                for aqp in os.listdir(dir):
+                    p = Path(dir) / aqp
+                    file_paths.append((str(p), dir_ind == 1))
+
+            out_csv: str = sys.argv[2]
+            parse_all_a_pdfs(file_paths, out_csv)
+
+            print(f"Complete! Exported answer PDFs info to '{out_csv}'")
 
         case "qset":
             if len(sys.argv) == 2:
@@ -486,7 +615,7 @@ if __name__ == "__main__":
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
-            ssqb_infos: list[SSQBInfo] = import_parsed_info("./all-q-parsed.csv")
+            ssqb_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
             out_json: str = sys.argv[2]
             create_question_set(out_json, ssqb_infos)
             print(f"Complete! Exported PDF to '{out_json}'")
@@ -497,13 +626,13 @@ if __name__ == "__main__":
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
-            ssqb_infos: list[SSQBInfo] = import_parsed_info("./all-q-parsed.csv")
+            ssqb_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
             out_txt: str = sys.argv[2]
             export_all_qids(ssqb_infos, sys.argv[2])
             print(f"Complete! Exported ids to '{out_txt}'")
 
         case "skilltree":
-            ssqb_infos: list[SSQBInfo] = import_parsed_info("./all-q-parsed.csv")
+            ssqb_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
             out_json: str = "skill-tree.json"
             gen_skill_tree(ssqb_infos, out_json)
             print(f"Complete! Exported skill tree to '{out_json}'")
@@ -512,7 +641,5 @@ if __name__ == "__main__":
             usage(sys.argv[0])
 
         case "_":
-            print(f"Unknown mode: '{mode}'")
-
-    # parse_all_ssqb_pdfs()
-    # gen_skill_tree(ssqb_info, "skill-tree.json")
+            usage(sys.argv[0])
+            print(f"\nERROR: Unknown mode: '{mode}'")

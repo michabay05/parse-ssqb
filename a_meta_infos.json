@@ -1,0 +1,52 @@
+[
+    {
+        "parsed_at": "2025-11-14 16:39:11.711042",
+        "source_pdf": "alls\\answers\\all-ans-math-adv-math.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:15.463137",
+        "source_pdf": "alls\\answers\\all-ans-math-algebra.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:22.118920",
+        "source_pdf": "alls\\answers\\all-ans-math-geometry.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:25.704157",
+        "source_pdf": "alls\\answers\\all-ans-math-prob-solv.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:29.080858",
+        "source_pdf": "alls\\answers\\all-ans-rw-craft-structure.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:31.087956",
+        "source_pdf": "alls\\answers\\all-ans-rw-expr-ideas.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:32.633686",
+        "source_pdf": "alls\\answers\\all-ans-rw-grammar.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:33.976770",
+        "source_pdf": "alls\\answers\\all-ans-rw-info-ideas.pdf",
+        "excluded": false
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:36.717968",
+        "source_pdf": "excludeds\\answers\\excluded-math-ans.pdf",
+        "excluded": true
+    },
+    {
+        "parsed_at": "2025-11-14 16:39:41.741551",
+        "source_pdf": "excludeds\\answers\\excluded-rw-ans.pdf",
+        "excluded": true
+    }
+]
