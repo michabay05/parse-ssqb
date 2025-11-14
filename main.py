@@ -99,13 +99,13 @@ class QInfo:
     src_pdf: str
     pg_inds: list[int]
 
-    # def __eq__(self, other) -> bool:
-    #     # NOTE: Equality will be detected based on the ids; therefore this function
-    #     #       assumes that each question has a UNIQUE id
-    #     return isinstance(other, QInfo) and self.q_id == other.q_id
+    def __eq__(self, other) -> bool:
+        # NOTE: Equality will be detected based on the ids; therefore this function
+        #       assumes that each question has a UNIQUE id
+        return isinstance(other, QInfo) and self.q_id == other.q_id
 
-    # def __hash__(self) -> int:
-    #     return hash((self.q_id, self.domain, self.skill, self.page_inds[0]))
+    def __hash__(self) -> int:
+        return hash((self.q_id, self.domain, self.skill, self.pg_inds[0]))
 
 @dataclass
 class AnsInfo:
@@ -245,17 +245,9 @@ def parse_question_pdf(path: str) -> list[QInfo]:
     return q_infos
 
 def parse_answer_pdf(path: str) -> list[AnsInfo]:
-    # NOTE: I have the following patterns in case the first one does not match
-    # 1: Should be common for MCQs and FRQs
-    first_pat: str = r"Correct Answer:[\s]([A-Za-z0-9.\/]+)"
-    # 2: Common for MCQs only
-    second_pat: str = r"Choice ([ABCDE]{1}) is correct\."
-    # 3: Common for FRQs only
-    third_pat: str = r"The correct answer is ([A-Za-z0-9.\/]+)\."
-
     doc: Document = fitz.open(path)
     a_infos: list[AnsInfo] = []
-    curr: AnsInfo = AnsInfo("", "", "", [])
+    curr: AnsInfo = AnsInfo(q_id="", answer="??", ans_src_pdf="", pg_inds=[])
 
     for page_ind in range(len(doc)):
         page = doc.load_page(page_ind)
@@ -270,7 +262,7 @@ def parse_answer_pdf(path: str) -> list[AnsInfo]:
         if len(matches) == 1:
             if curr.q_id != "":
                 a_infos.append(AnsInfo(curr.q_id, curr.answer, path, curr.pg_inds))
-                curr = AnsInfo("", "", "", [])
+                curr = AnsInfo(q_id="", answer="??", ans_src_pdf="", pg_inds=[])
 
             curr.q_id = matches[0]
         else:
@@ -281,12 +273,21 @@ def parse_answer_pdf(path: str) -> list[AnsInfo]:
 
         curr.pg_inds.append(page_ind)
 
+        patterns = [
+            # NOTE: I have the following patterns in case the first one does not match
+            # 0: Should be common for MCQs and FRQs
+            r"Correct Answer:[\s]([A-Za-z0-9.\/-]+)",
+            # 1: Common for MCQs only
+            r"Choice ([ABCDE]{1}) is correct\.",
+            # 2: Common for FRQs only
+            r"The correct answer is ([A-Za-z0-9.\/-]+)\.",
+            # 3: For a specific question in adv math where a question asks for possible solutions
+            r"The correct answer is either ([A-Za-z0-9.\/, -]+)\.",
+        ]
         matches = []
-        for pattern in [first_pat, second_pat, third_pat]:
-        # for (i, pattern) in enumerate([first_pat, second_pat, third_pat]):
+        for pattern in patterns:
             matches = re.findall(pattern, text)
             if len(matches) > 0:
-                # print(f"Using pattern {i + 1}")
                 break
 
         if len(matches) == 1:
@@ -294,7 +295,7 @@ def parse_answer_pdf(path: str) -> list[AnsInfo]:
 
     return a_infos
 
-def q_infos_to_df(ssqb_infos: list[QInfo]) -> pd.DataFrame:
+def q_infos_to_df(q_infos: list[QInfo]) -> pd.DataFrame:
     # Convert to dataframe
     data: dict = {
         "ID": [],
@@ -305,7 +306,7 @@ def q_infos_to_df(ssqb_infos: list[QInfo]) -> pd.DataFrame:
         "Skill": [],
         "Source_PDF": [],
     }
-    for info in ssqb_infos:
+    for info in q_infos:
         data["ID"].append(info.q_id)
         data["Pages"].append(pages_as_str(info.pg_inds))
         data["Difficulty"].append(info.level)
@@ -333,13 +334,13 @@ def a_infos_to_df(a_infos: list[AnsInfo]) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 def dedup_q_pdfs(pdf_path: str) -> Document:
-    ssqb_infos: list[QInfo] = parse_question_pdf(pdf_path)
-    assert len(ssqb_infos) > 0, "Parsed ssqb info should have some objects in it."
+    q_infos: list[QInfo] = parse_question_pdf(pdf_path)
+    assert len(q_infos) > 0, "Parsed ssqb info should have some objects in it."
 
     dedup_ssqb: list[QInfo] = []
-    for ssqb in ssqb_infos:
-        if ssqb not in dedup_ssqb:
-            dedup_ssqb.append(ssqb)
+    for q_info in q_infos:
+        if q_info not in dedup_ssqb:
+            dedup_ssqb.append(q_info)
 
     orig_doc: Document = fitz.open(pdf_path)
     dedup_doc: Document = Document()
@@ -421,20 +422,8 @@ def parse_all_a_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> None:
         json.dump(meta_info_list, f, indent=4)
 
 def import_q_parsed_info(path: str) -> list[QInfo]:
-    # df_list: list[pd.DataFrame] = []
-    # NOTE: changed to using a combined csv file instead of six smaller ones
-    # dir: str = "./parsed"
-    # for file_path in os.listdir(dir):
-    #     path = f"{dir}/{file_path}"
-    #     if Path(path).suffix != ".csv":
-    #         print(f"Ignoring other files found: '{path}'")
-    #         continue
-
-    #     df_list.append(pd.read_csv(path))
-    # all_df = pd.concat(df_list, ignore_index=True)
-
     all_df = pd.read_csv(path)
-    ssqb_infos: list[QInfo] = []
+    q_infos: list[QInfo] = []
 
     for i in range(len(all_df)):
         pages_str = str(all_df["Pages"][i]) # type: ignore
@@ -442,21 +431,64 @@ def import_q_parsed_info(path: str) -> list[QInfo]:
         pages_str: list[str] = pages_str.split(PAGE_DELIMITER)
         assert len(pages_str) == 1 or len(pages_str) == 2
 
-        page_inds: list[int] = [int(pages_str[0]) - 1]
+        pg_inds: list[int] = [int(pages_str[0]) - 1]
         if len(pages_str) == 2:
-            page_inds.append(int(pages_str[1]) - 1)
+            pg_inds.append(int(pages_str[1]) - 1)
 
-        ssqb_infos.append(QInfo(
-            q_id=all_df["ID"][i], # type: ignore
-            test=all_df["Test"][i], # type: ignore
-            domain=all_df["Domain"][i], # type: ignore
-            level=all_df["Difficulty"][i], # type: ignore
-            skill=all_df["Skill"][i], # type: ignore
-            src_pdf=all_df["Source_PDF"][i], # type: ignore
-            pg_inds=page_inds
+        q_id = all_df["ID"][i]
+        test = all_df["Test"][i]
+        domain = all_df["Domain"][i]
+        level = all_df["Difficulty"][i]
+        skill = all_df["Skill"][i]
+        src_pdf = all_df["Source_PDF"][i]
+
+        assert isinstance(q_id, str), f"Expected {q_id} to be a str"
+        assert isinstance(test, str), f"Expected {test} to be a str"
+        assert isinstance(domain, str), f"Expected {domain} to be a str"
+        assert isinstance(level, str) and level in ["easy", "medium", "hard"], (
+            f"Expected {level} to be a str"
+        )
+        assert isinstance(skill, str), f"Expected {skill} to be a str"
+        assert isinstance(src_pdf, str), f"Expected {src_pdf} to be a str"
+
+        q_infos.append(QInfo(
+            q_id=q_id,
+            test=test,
+            domain=domain,
+            skill=skill,
+            level=level, # type: ignore
+            src_pdf=src_pdf,
+            pg_inds=pg_inds
         ))
 
-    return ssqb_infos
+    return q_infos
+
+def import_a_parsed_info(path: str) -> list[AnsInfo]:
+    all_df = pd.read_csv(path)
+    a_infos: list[AnsInfo] = []
+
+    for i in range(len(all_df)):
+        pages_str = all_df["Pages"][i]
+        assert isinstance(pages_str, str)
+
+        pages: list[str] = pages_str.split(PAGE_DELIMITER)
+        assert len(pages) == 1 or len(pages) == 2
+
+        pg_inds: list[int] = []
+        for pg_ind in pages:
+            pg_inds.append(int(pg_ind) - 1)
+
+        q_id = all_df["ID"][i]
+        answer = all_df["Answer"][i]
+        ans_src_pdf = all_df["Answer_PDF"][i]
+
+        assert isinstance(q_id, str), f"Expected {q_id} to be a str"
+        assert isinstance(answer, str), f"Expected {answer} to be a str"
+        assert isinstance(ans_src_pdf, str), f"Expected {ans_src_pdf} to be a str"
+
+        a_infos.append(AnsInfo(q_id=q_id, answer=answer, ans_src_pdf=ans_src_pdf, pg_inds=pg_inds))
+
+    return a_infos
 
 def gen_skill_tree(ssqb_infos: list[QInfo], output_json: str, w_difficulty: bool = False) -> None:
     tree: dict[str, dict[str, dict]] = {}
@@ -491,7 +523,7 @@ def gen_skill_tree(ssqb_infos: list[QInfo], output_json: str, w_difficulty: bool
     with open(output_json, "w") as f:
         json.dump(tree, f, indent=4)
 
-def create_question_set(json_path: str, ssqb_infos: list[QInfo]) -> None:
+def create_question_set(json_path: str, q_infos: list[QInfo]) -> None:
     # The information about the question set's composition is found from the json
     with open(json_path, "r") as f:
         set_info = json.load(f)
@@ -507,7 +539,7 @@ def create_question_set(json_path: str, ssqb_infos: list[QInfo]) -> None:
             for skill, qty in skills_info.items():
                 # Find questions that test the expected skill
                 valid_qs_inds: list[int] = []
-                for i, q in enumerate(ssqb_infos):
+                for i, q in enumerate(q_infos):
                     if q.domain == domain and q.skill == skill:
                         valid_qs_inds.append(i)
 
@@ -518,13 +550,13 @@ def create_question_set(json_path: str, ssqb_infos: list[QInfo]) -> None:
                     continue
 
                 chosen_inds = random.choices(valid_qs_inds, k=min(qty, len(valid_qs_inds)))
-                all_chosen.extend([ssqb_infos[c_i] for c_i in chosen_inds])
+                all_chosen.extend([q_infos[c_i] for c_i in chosen_inds])
 
     # Specific id filtering
-    all_chosen_so_far = [ssqb.q_id for ssqb in all_chosen]
-    for ssqb in ssqb_infos:
-        if (ssqb.q_id in specific_ids) and (ssqb.q_id not in all_chosen_so_far):
-            all_chosen.append(ssqb)
+    all_chosen_so_far = [chosen.q_id for chosen in all_chosen]
+    for q_info in q_infos:
+        if (q_info.q_id in specific_ids) and (q_info.q_id not in all_chosen_so_far):
+            all_chosen.append(q_info)
 
     assert len(all_chosen) <= total_questions, (
         f"Requested questions ({total_questions}) && Provided questions ({len(all_chosen)})"
@@ -558,9 +590,10 @@ def usage(program: str) -> None:
     print(f"USAGE: {program} [MODES] [ARGS]\n")
     print("Modes:")
     print("        qset <INPUT_JSON> |  Generate question set given an input json for filtering")
+    print("        akey <INPUT_PDF>  |  Generate answer key given a previously generated question pdf")
     print("      allids <OUT_JSON>   |  Get a json containing the id of all questions")
     print("    parse-qs <OUT_CSV>    |  Categorize questions pdfs and output a single csv")
-    print("   parse-as <OUT_CSV>    |  Categorize answers pdfs and output a single csv")
+    print("   parse-as <OUT_CSV>     |  Categorize answers pdfs and output a single csv")
     print("   skilltree              |  Generate a skill tree with quantity; save into json")
     print("        help              |  Get this help message")
 
@@ -615,10 +648,19 @@ if __name__ == "__main__":
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
-            ssqb_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
+            q_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
             out_json: str = sys.argv[2]
-            create_question_set(out_json, ssqb_infos)
+            create_question_set(out_json, q_infos)
             print(f"Complete! Exported PDF to '{out_json}'")
+
+        case "akey":
+            if len(sys.argv) == 2:
+                print("ERROR: please provide input json to use for filtering.")
+                print("Try rerunning this command with the 'help' flag for more info.")
+                sys.exit(1)
+
+            a_infos: list[AnsInfo] = import_a_parsed_info("./all-a-parsed.csv")
+            assert False
 
         case "allids":
             if len(sys.argv) == 2:
@@ -626,15 +668,15 @@ if __name__ == "__main__":
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
-            ssqb_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
+            q_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
             out_txt: str = sys.argv[2]
-            export_all_qids(ssqb_infos, sys.argv[2])
+            export_all_qids(q_infos, sys.argv[2])
             print(f"Complete! Exported ids to '{out_txt}'")
 
         case "skilltree":
-            ssqb_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
+            q_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
             out_json: str = "skill-tree.json"
-            gen_skill_tree(ssqb_infos, out_json)
+            gen_skill_tree(q_infos, out_json)
             print(f"Complete! Exported skill tree to '{out_json}'")
 
         case "help":

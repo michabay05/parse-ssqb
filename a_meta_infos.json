@@ -1,51 +1,51 @@
 [
     {
-        "parsed_at": "2025-11-14 16:39:11.711042",
+        "parsed_at": "2025-11-14 17:30:03.297930",
         "source_pdf": "alls\\answers\\all-ans-math-adv-math.pdf",
         "excluded": false
     },
     {
-        "parsed_at": "2025-11-14 16:39:15.463137",
+        "parsed_at": "2025-11-14 17:30:05.989164",
         "source_pdf": "alls\\answers\\all-ans-math-algebra.pdf",
         "excluded": false
     },
     {
-        "parsed_at": "2025-11-14 16:39:22.118920",
+        "parsed_at": "2025-11-14 17:30:10.719187",
         "source_pdf": "alls\\answers\\all-ans-math-geometry.pdf",
         "excluded": false
     },
     {
-        "parsed_at": "2025-11-14 16:39:25.704157",
+        "parsed_at": "2025-11-14 17:30:12.370337",
         "source_pdf": "alls\\answers\\all-ans-math-prob-solv.pdf",
         "excluded": false
     },
     {
-        "parsed_at": "2025-11-14 16:39:29.080858",
+        "parsed_at": "2025-11-14 17:30:13.914365",
         "source_pdf": "alls\\answers\\all-ans-rw-craft-structure.pdf",
         "excluded": false
     },
     {
-        "parsed_at": "2025-11-14 16:39:31.087956",
+        "parsed_at": "2025-11-14 17:30:14.742183",
         "source_pdf": "alls\\answers\\all-ans-rw-expr-ideas.pdf",
         "excluded": false
     },
     {
-        "parsed_at": "2025-11-14 16:39:32.633686",
+        "parsed_at": "2025-11-14 17:30:15.336688",
         "source_pdf": "alls\\answers\\all-ans-rw-grammar.pdf",
         "excluded": false
     },
     {
-        "parsed_at": "2025-11-14 16:39:33.976770",
+        "parsed_at": "2025-11-14 17:30:15.921053",
         "source_pdf": "alls\\answers\\all-ans-rw-info-ideas.pdf",
         "excluded": false
     },
     {
-        "parsed_at": "2025-11-14 16:39:36.717968",
+        "parsed_at": "2025-11-14 17:30:17.917099",
         "source_pdf": "excludeds\\answers\\excluded-math-ans.pdf",
         "excluded": true
     },
     {
-        "parsed_at": "2025-11-14 16:39:41.741551",
+        "parsed_at": "2025-11-14 17:30:22.660751",
         "source_pdf": "excludeds\\answers\\excluded-rw-ans.pdf",
         "excluded": true
     }
