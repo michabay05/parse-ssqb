@@ -71,6 +71,28 @@ app.get("/all-ids", (req, res) => {
     res.status(200);
 })
 
+app.get("/skill-tree", (req, res) => {
+    exec(
+        "uv run main.py skilltree",
+        { cwd: "../" },
+        (error, stdout, stderr) => {
+            if (error) {
+                console.error("Error:", error);
+                return;
+            }
+            if (stderr) {
+                console.error("Stderr:", stderr);
+                return;
+            }
+            console.log("Stdout:", stdout);
+            console.log("backend: Ran cmd");
+        }
+    );
+
+    res.sendFile("skill-tree.json", { root: ".." });
+    res.status(200);
+})
+
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`);
+    console.log(`Server listening at http://localhost:${port}`);
 });

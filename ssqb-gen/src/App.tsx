@@ -5,7 +5,6 @@ interface FilterCompProps {
     enabled: boolean;
     btnCallback: () => void;
     inputCallback: (qty: number) => void;
-    qty: number;
 }
 
 function DomainFilterLine({
@@ -13,7 +12,6 @@ function DomainFilterLine({
     enabled,
     btnCallback,
     inputCallback,
-    qty,
 }: FilterCompProps) {
     const dropdownClass = "mr-2 hover:bg-gray-200 hover:cursor-pointer";
     // return <div className="flex border-t border-t-gray-700">
@@ -28,17 +26,14 @@ function DomainFilterLine({
             <input
                 type="number"
                 placeholder="#"
-                // value={qty}
                 className={`w-10 border-2 rounded-sm text-center px-1 ${enabled ? "hidden" : ""}`}
-                onChange={(e) => {
-                    const val = Number.parseInt(e.target.value);
-                    if (!isNaN(val)) {
-                        inputCallback(val);
-                    }
-                }}
                 onBlur={(e) => {
-                    if (isNaN(Number.parseInt(e.target.value))) {
+                    const val = Number.parseInt(e.target.value);
+                    if (isNaN(val)) {
                         alert("Only type numbers into the input boxes");
+                        e.target.value = "";
+                    } else {
+                        inputCallback(val);
                     }
                 }}
             />
@@ -51,7 +46,6 @@ function SkillFilterLine({
     enabled,
     btnCallback,
     inputCallback,
-    qty,
 }: FilterCompProps) {
     const addCancelBtnClass = "mr-2 hover:bg-gray-200 hover:cursor-pointer";
     const modifyBtn = enabled ? (
@@ -71,16 +65,14 @@ function SkillFilterLine({
             </div>
             <input
                 type="number"
-                value={qty}
                 className={`w-10 border-2 rounded-sm text-center px-1 ${enabled ? "" : "hidden"}`}
-                onChange={(e) => {
-                    const value = e.target.value;
-                    const numVal = Number.parseInt(value);
-                    if (!isNaN(numVal)) {
-                        inputCallback(numVal);
+                onBlur={(e) => {
+                    const val = Number.parseInt(e.target.value);
+                    if (isNaN(val)) {
+                        alert("Only type numbers into the input boxes");
+                        e.target.value = "";
                     } else {
-                        if (value.length > 0)
-                            alert("Only type numbers into the input boxes");
+                        inputCallback(val);
                     }
                 }}
             />
@@ -89,6 +81,7 @@ function SkillFilterLine({
 }
 
 interface DictStrNum {
+    // [key: string]: number[];
     [key: string]: number;
 }
 
@@ -109,6 +102,7 @@ interface ExportData {
     RW: NestedDict;
     Math: NestedDict;
     chosenIds: string[];
+    includeAnsKey: boolean;
 }
 
 class DomainFilter {
@@ -159,7 +153,6 @@ function renderDomainFilters(
                         key={`${dI},${sI}`}
                         name={skill.name}
                         enabled={skill.enabled}
-                        qty={skill.qty}
                         btnCallback={() => {
                             skillBtnCallback(df.name, sI);
                         }}
@@ -176,7 +169,6 @@ function renderDomainFilters(
                 <DomainFilterLine
                     name={df.name}
                     enabled={df.enabled}
-                    qty={df.qty}
                     btnCallback={() => domainBtnCallback(df.name)}
                     inputCallback={(qty) => domainInputCallback(df.name, qty)}
                 />
@@ -189,14 +181,21 @@ function renderDomainFilters(
 }
 
 interface ChosenIdsDisplayProps {
-    id: string
+    id: string;
+    removeId: (id: string) => void;
 }
 
-function ChosenIdsDisplay({id}: ChosenIdsDisplayProps) {
-    return <span className="my-2 mr-3 border-2 border-gray-600 rounded-md px-3 py-1 flex content-center">
-        <button className="mr-2"> <CancelCircleSVG classNames="h-5"/> </button>
-        {id}
-    </span>
+function ChosenIdsDisplay({ id, removeId }: ChosenIdsDisplayProps) {
+    return (
+        <span className="my-2 mr-3 border-2 border-gray-600 rounded-md px-3 py-1 flex content-center">
+            <button className="mr-2 hover:cursor-pointer"
+                onClick={() => removeId(id)}>
+                {" "}
+                <CancelCircleSVG classNames="h-5" />{" "}
+            </button>
+            {id}
+        </span>
+    );
 }
 
 interface IndividualQIdsProps {
@@ -204,9 +203,16 @@ interface IndividualQIdsProps {
     qIds: string[];
     chosenIds: string[];
     addToChosenList: (chosenId: string) => void;
+    removeFromChosenList: (chosenId: string) => void;
 }
 
-function IndividualQIds({ maxResults, qIds, chosenIds, addToChosenList }: IndividualQIdsProps) {
+function IndividualQIds({
+    maxResults,
+    qIds,
+    chosenIds,
+    addToChosenList,
+    removeFromChosenList,
+}: IndividualQIdsProps) {
     const [value, setValue] = useState<string>("");
     const [focusInd, setFocusInd] = useState<number>(-1);
     const [showPopup, setShowPopup] = useState<boolean>(false);
@@ -216,7 +222,7 @@ function IndividualQIds({ maxResults, qIds, chosenIds, addToChosenList }: Indivi
     const togglePopup = () => {
         setShowPopup(!showPopup);
         setFocusInd(showPopup ? 0 : -1);
-    }
+    };
 
     let results = qIds
         .filter((qI) => qI.startsWith(value))
@@ -224,7 +230,8 @@ function IndividualQIds({ maxResults, qIds, chosenIds, addToChosenList }: Indivi
 
     const resultItems = results.map((r, i) => {
         if (showPopup) {
-            const selected = i == focusInd ? "px-5 rounded-md bg-zinc-500" : "mx-5";
+            const selected =
+                i == focusInd ? "px-5 rounded-md bg-zinc-500" : "mx-5";
             return (
                 <li className={selected + " my-3"} key={i}>
                     <span className="font-bold">
@@ -255,8 +262,6 @@ function IndividualQIds({ maxResults, qIds, chosenIds, addToChosenList }: Indivi
                             setFocusInd(Math.max(focusInd - 1, 0));
                         } else if (e.key == "Enter") {
                             addToChosenList(results[focusInd]);
-                            // el.value = "";
-                            // setValue(el.value);
                         }
 
                         results = qIds
@@ -281,11 +286,23 @@ function IndividualQIds({ maxResults, qIds, chosenIds, addToChosenList }: Indivi
 
             <div className="flex flex-wrap justify-center">
                 {chosenIds.map((cI, i) => (
-                    <ChosenIdsDisplay key={i} id={cI} />
+                    <ChosenIdsDisplay key={i} id={cI} removeId={removeFromChosenList} />
                 ))}
             </div>
         </div>
     );
+}
+
+function divideQs(total: number, n: number): number[] {
+    if (total >= n) {
+        const output = Array.from({ length: n }, () => Math.floor(total / n));
+        output[output.length - 1] = Math.floor(total / n) + (total % n);
+        return output;
+    } else {
+        const output = Array.from({ length: n }, () => 1);
+        output.fill(0, total);
+        return output;
+    }
 }
 
 export default function App() {
@@ -293,6 +310,7 @@ export default function App() {
     const [outputPath, setOutputPath] = useState<string>("");
     const [specificIds, setSpecificIds] = useState<string[]>([]);
     const [exportContent, setExportContent] = useState<string>("");
+    const [includeAnsKey, setIncludeAnsKey] = useState<boolean>(false);
     const [allIds, setAllIds] = useState<string[]>([]);
 
     const rw = "Reading and Writing";
@@ -301,7 +319,7 @@ export default function App() {
         let rwTree: NestedDict = {};
         let mathTree: NestedDict = {};
         const fetchSkillTree = async () => {
-            const response = await fetch("skill-tree.json");
+            const response = await fetch("http://localhost:8080/skill-tree");
             const resJson = await response.json();
             rwTree = resJson[rw];
             mathTree = resJson[math];
@@ -431,6 +449,7 @@ export default function App() {
             RW: {},
             Math: {},
             chosenIds: specificIds,
+            includeAnsKey: includeAnsKey,
         };
 
         for (const df of filters) {
@@ -442,18 +461,16 @@ export default function App() {
                 df.skills
                     .filter((s) => s.enabled)
                     .forEach((s) => {
+                        // TODO: bring back
+                        // const [each, last] = divideQs(s.qty, 3);
+                        // info[s.name] = [each, each, last];
                         info[s.name] = s.qty;
                     });
             } else {
                 const len = df.skills.length;
-                const total = df.qty;
-                const qPerSkill = Math.floor(total / len);
+                const arr = divideQs(df.qty, len);
                 df.skills.forEach((s, i) => {
-                    if (i < len - 1) {
-                        info[s.name] = qPerSkill;
-                    } else {
-                        info[s.name] = total - i * qPerSkill;
-                    }
+                    info[s.name] = arr[i];
                 });
             }
 
@@ -475,7 +492,7 @@ export default function App() {
             body: jsonData,
         }).then(() => {
             // console.log(`http://localhost:8080/download`);
-            window.open(`http://localhost:8080/download`);
+            window.open("http://localhost:8080/download");
         });
     };
 
@@ -502,12 +519,21 @@ export default function App() {
                         skillInputCallback,
                     )}
                 </div>
-                <IndividualQIds chosenIds={specificIds} maxResults={5} qIds={allIds} addToChosenList={(id: string) => {
-                    if (!specificIds.includes(id)) setSpecificIds([...specificIds, id]);
-                    // const v = [...specificIds, id];
-                    // setSpecificIds(v);
-                    // console.log(v);
-                }} />
+                <IndividualQIds
+                    chosenIds={specificIds}
+                    maxResults={5}
+                    qIds={allIds}
+                    addToChosenList={(id: string) => {
+                        if (!specificIds.includes(id))
+                            setSpecificIds([...specificIds, id]);
+                        // const v = [...specificIds, id];
+                        // setSpecificIds(v);
+                        // console.log(v);
+                    }}
+                    removeFromChosenList={(id: string) => {
+                        setSpecificIds(specificIds.filter(sI => sI != id))
+                    }}
+                />
                 <div className="my-3 flex h-fit justify-between col-span-2">
                     <div className="flex flex-1">
                         <input
@@ -529,25 +555,38 @@ export default function App() {
                 </div>
             </div>
 
-            {/*{
-            exportContent.length > 0
-            ? <div className="mt-6">
-                <p className="mb-4">
-                    Copy the JSON text below and save it in the project folder as <code className="bg-gray-300 rounded">input.json</code>.
-                </p>
-                <div className="bg-zinc-300 rounded-lg relative">
-                    <button
-                        onClick={() => navigator.clipboard.writeText(exportContent)}
-                        className="p-2 absolute top-6 right-8 hover:cursor-pointer hover:rounded hover:bg-zinc-400">
-                        <ClipboardSVG />
-                    </button>
-                    <pre className="p-6 w-full">
-                        {exportContent}
-                    </pre>
-                </div>
+            <div className="flex">
+                <input type="checkbox" className="mr-4"
+                    onClick={e => {
+                        const checkbox = (e.target) as HTMLInputElement;
+                        setIncludeAnsKey(checkbox.checked);
+                    }}
+                />
+                <p>Display answers</p>
             </div>
-            : <></>
-        }*/}
+
+            {/*{exportContent.length > 0 ? (
+                <div className="mt-6">
+                    <p className="mb-4">
+                        Copy the JSON text below and save it in the project
+                        folder as{" "}
+                        <code className="bg-gray-300 rounded">input.json</code>.
+                    </p>
+                    <div className="bg-zinc-300 rounded-lg relative">
+                        <button
+                            onClick={() =>
+                                navigator.clipboard.writeText(exportContent)
+                            }
+                            className="p-2 absolute top-6 right-8 hover:cursor-pointer hover:rounded hover:bg-zinc-400"
+                        >
+                            <ClipboardSVG />
+                        </button>
+                        <pre className="p-6 w-full">{exportContent}</pre>
+                    </div>
+                </div>
+            ) : (
+                <></>
+            )}*/}
         </div>
     );
 }

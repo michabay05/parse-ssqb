@@ -1,39 +1,51 @@
 {
     "Math": {
         "Advanced Math": {
-            "Nonlinear equations in one variable and systems of equations in two variables": 148,
-            "Nonlinear functions": 227,
-            "Equivalent expressions": 102
+            "Nonlinear equations in one variable and systems of equations in two variables": 217,
+            "Nonlinear functions": 313,
+            "Equivalent expressions": 166
         },
         "Algebra": {
-            "Linear functions": 346,
-            "Systems of two linear equations in two variables": 242,
-            "Linear inequalities in one or two variables": 165,
-            "Linear equations in one variable": 254,
-            "Linear equations in two variables": 304
+            "Linear functions": 213,
+            "Systems of two linear equations in two variables": 158,
+            "Linear inequalities in one or two variables": 103,
+            "Linear equations in one variable": 150,
+            "Linear equations in two variables": 177
         },
         "Geometry and Trigonometry": {
-            "Area and volume": 104,
-            "Right triangles and trigonometry": 64,
-            "Circles": 62
+            "Lines, angles, and triangles": 119,
+            "Area and volume": 129,
+            "Right triangles and trigonometry": 82,
+            "Circles": 80
+        },
+        "Problem-Solving and Data Analysis": {
+            "Two-variable data: Models and scatterplots": 95,
+            "Ratios, rates, proportional relationships, and units": 119,
+            "Probability and conditional probability": 72,
+            "Inference from sample statistics and margin of error": 40,
+            "One-variable data: Distributions and measures of center and spread": 113,
+            "Percentages": 110,
+            "Evaluating statistical claims: Observational studies and experiments": 22
         }
     },
     "Reading and Writing": {
         "Craft and Structure": {
-            "Text Structure and Purpose": 130,
-            "Words in Context": 226
+            "Text Structure and Purpose": 177,
+            "Words in Context": 294,
+            "Cross-Text Connections": 93
         },
         "Standard English Conventions": {
-            "Boundaries": 222
+            "Boundaries": 240,
+            "Form, Structure, and Sense": 236
         },
         "Expression of Ideas": {
-            "Transitions": 165,
-            "Rhetorical Synthesis": 187
+            "Transitions": 209,
+            "Rhetorical Synthesis": 248
         },
         "Information and Ideas": {
-            "Inferences": 243,
-            "Command of Evidence": 506,
-            "Central Ideas and Details": 229
+            "Inferences": 169,
+            "Command of Evidence": 347,
+            "Central Ideas and Details": 164
         }
     }
 }

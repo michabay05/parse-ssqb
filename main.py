@@ -1,8 +1,7 @@
 from dataclasses import dataclass, asdict
 import datetime as dt
-import io
 from pathlib import Path
-import json, os, random, re, sys, time
+import io, json, math, os, random, re, sys, time
 from typing import Literal
 
 import pandas as pd
@@ -98,6 +97,7 @@ class QInfo:
     skill: str
     src_pdf: str
     pg_inds: list[int]
+    excluded: bool
 
     def __eq__(self, other) -> bool:
         # NOTE: Equality will be detected based on the ids; therefore this function
@@ -181,10 +181,10 @@ def get_difficulty(doc: Document, page: Page, drawing_only: bool) -> Level | Non
         case 3: return "hard"
         case _: return None
 
-def parse_question_pdf(path: str) -> list[QInfo]:
+def parse_question_pdf(path: str, excluded: bool) -> list[QInfo]:
     doc: Document = fitz.open(path)
     q_infos: list[QInfo] = []
-    curr: QInfo = QInfo("", "", "", "easy", "", "", [])
+    curr: QInfo = QInfo("", "", "", "easy", "", "", [], False)
 
     for page_ind in range(len(doc)):
         page = doc.load_page(page_ind)
@@ -206,9 +206,10 @@ def parse_question_pdf(path: str) -> list[QInfo]:
                     skill=curr.skill,
                     src_pdf=path,
                     level=curr.level,
-                    pg_inds=curr.pg_inds
+                    pg_inds=curr.pg_inds,
+                    excluded=excluded
                 ))
-                curr: QInfo = QInfo("", "", "", "easy", "", "", [])
+                curr: QInfo = QInfo("", "", "", "easy", "", "", [], False)
 
             curr.q_id = matches[0]
 
@@ -230,7 +231,7 @@ def parse_question_pdf(path: str) -> list[QInfo]:
 
         labels_start_ind: int = text.find("Assessment")
         label_infos = ' '.join(text[labels_start_ind:].split())
-        label_info_pat = r"Assessment (\w*) Test ([\w\s]*) Domain ([\w\s]*) Skill ([\w\s]*) D"
+        label_info_pat = r"Assessment (\w*) Test ([\w\s]*) Domain ([\w\s-]*) Skill ([\w\s,:-]*) D"
         matches = re.findall(label_info_pat, label_infos)
         if len(matches) == 1:
             assessment, test, domain, skill = matches[0]
@@ -301,6 +302,7 @@ def q_infos_to_df(q_infos: list[QInfo]) -> pd.DataFrame:
         "ID": [],
         "Pages": [],
         "Difficulty": [],
+        "Excluded": [],
         "Test": [],
         "Domain": [],
         "Skill": [],
@@ -310,6 +312,7 @@ def q_infos_to_df(q_infos: list[QInfo]) -> pd.DataFrame:
         data["ID"].append(info.q_id)
         data["Pages"].append(pages_as_str(info.pg_inds))
         data["Difficulty"].append(info.level)
+        data["Excluded"].append(info.excluded)
         data["Test"].append(info.test)
         data["Domain"].append(info.domain)
         data["Skill"].append(info.skill)
@@ -333,32 +336,6 @@ def a_infos_to_df(a_infos: list[AnsInfo]) -> pd.DataFrame:
 
     return pd.DataFrame(data)
 
-def dedup_q_pdfs(pdf_path: str) -> Document:
-    q_infos: list[QInfo] = parse_question_pdf(pdf_path)
-    assert len(q_infos) > 0, "Parsed ssqb info should have some objects in it."
-
-    dedup_ssqb: list[QInfo] = []
-    for q_info in q_infos:
-        if q_info not in dedup_ssqb:
-            dedup_ssqb.append(q_info)
-
-    orig_doc: Document = fitz.open(pdf_path)
-    dedup_doc: Document = Document()
-
-    for ssqb in dedup_ssqb:
-        page_nos: list[int] = ssqb.pg_inds
-        if len(page_nos) == 1:
-            page_nos.append(page_nos[0])
-
-        assert len(page_nos) == 2, f"A page range should have only 2 numbers -> pages: {page_nos}"
-
-        for pg_no in range(page_nos[0], page_nos[1] + 1):
-            if not is_page_empty(orig_doc.load_page(pg_no)):
-            # if not is_page_empty(orig_doc.load_page(pg_no)):
-                dedup_doc.insert_pdf(orig_doc, from_page=pg_no, to_page=pg_no)
-
-    return dedup_doc
-
 def parse_all_q_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> None:
     meta_info_list: list[dict] = []
     all_q_infos: list[QInfo] = []
@@ -372,8 +349,21 @@ def parse_all_q_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> None:
 
         # output_name = pdf_parsed_output_name(path)
         timer.start()
-        q_infos: list[QInfo] = parse_question_pdf(path)
-        all_q_infos.extend(q_infos)
+        q_infos: list[QInfo] = parse_question_pdf(path, excluded)
+        all_q_ids_so_far = [aq.q_id for aq in all_q_infos]
+        for q_info in q_infos:
+            # NOTE: if it is the second time, I come across this question, it must mean that
+            # this question is both in the 'all' and 'excluded' list, therefore, delete the
+            # existing q_info and add the excluded question. all_q_infos should only contain unique
+            # items.
+            try:
+                ind = all_q_ids_so_far.index(q_info.q_id)
+                del all_q_infos[ind]
+            except ValueError:
+                pass
+
+            all_q_infos.append(q_info)
+
         timer.stop(f"Completed parsing '{path}'")
 
         # NOTE: deduplication does not have to always happen
@@ -403,8 +393,14 @@ def parse_all_a_pdfs(file_paths: list[tuple[str, bool]], out_csv: str) -> None:
 
         # output_name = pdf_parsed_output_name(path)
         timer.start()
+
         a_infos: list[AnsInfo] = parse_answer_pdf(path)
-        all_a_infos.extend(a_infos)
+        all_a_ids_so_far = [aa.q_id for aa in all_a_infos]
+        for a_info in a_infos:
+            # NOTE: all_a_infos should contain only unique items
+            if a_info.q_id not in all_a_ids_so_far:
+                all_a_infos.append(a_info)
+
         timer.stop(f"Completed parsing '{path}'")
 
         # NOTE: deduplication does not have to always happen
@@ -428,28 +424,29 @@ def import_q_parsed_info(path: str) -> list[QInfo]:
     for i in range(len(all_df)):
         pages_str = str(all_df["Pages"][i]) # type: ignore
         assert isinstance(pages_str, str)
-        pages_str: list[str] = pages_str.split(PAGE_DELIMITER)
-        assert len(pages_str) == 1 or len(pages_str) == 2
 
+        pages_str: list[str] = pages_str.split(PAGE_DELIMITER)
         pg_inds: list[int] = [int(pages_str[0]) - 1]
-        if len(pages_str) == 2:
-            pg_inds.append(int(pages_str[1]) - 1)
+        for pg_no_str in pages_str[1:]:
+            pg_inds.append(int(pg_no_str) - 1)
 
         q_id = all_df["ID"][i]
         test = all_df["Test"][i]
         domain = all_df["Domain"][i]
         level = all_df["Difficulty"][i]
+        excluded = bool(all_df["Excluded"][i])
         skill = all_df["Skill"][i]
         src_pdf = all_df["Source_PDF"][i]
 
-        assert isinstance(q_id, str), f"Expected {q_id} to be a str"
-        assert isinstance(test, str), f"Expected {test} to be a str"
-        assert isinstance(domain, str), f"Expected {domain} to be a str"
+        assert isinstance(q_id, str), f"Expected q_id to be a str: q_id = '{q_id}'"
+        assert isinstance(test, str), f"Expected test to be a str: test = '{test}' @ {i}"
+        assert isinstance(domain, str), f"Expected domain to be a str: domain = '{domain}'"
         assert isinstance(level, str) and level in ["easy", "medium", "hard"], (
-            f"Expected {level} to be a str"
+            f"Expected level to be a str: level = '{level}'"
         )
-        assert isinstance(skill, str), f"Expected {skill} to be a str"
-        assert isinstance(src_pdf, str), f"Expected {src_pdf} to be a str"
+        assert isinstance(excluded, bool), f"Expected excluded to be a bool: excluded = '{excluded}'"
+        assert isinstance(skill, str), f"Expected skill to be a str: skill = '{skill}'"
+        assert isinstance(src_pdf, str), f"Expected src_pdf to be a str: src_pdf = '{src_pdf}'"
 
         q_infos.append(QInfo(
             q_id=q_id,
@@ -457,6 +454,7 @@ def import_q_parsed_info(path: str) -> list[QInfo]:
             domain=domain,
             skill=skill,
             level=level, # type: ignore
+            excluded=excluded,
             src_pdf=src_pdf,
             pg_inds=pg_inds
         ))
@@ -472,8 +470,6 @@ def import_a_parsed_info(path: str) -> list[AnsInfo]:
         assert isinstance(pages_str, str)
 
         pages: list[str] = pages_str.split(PAGE_DELIMITER)
-        assert len(pages) == 1 or len(pages) == 2
-
         pg_inds: list[int] = []
         for pg_ind in pages:
             pg_inds.append(int(pg_ind) - 1)
@@ -482,9 +478,9 @@ def import_a_parsed_info(path: str) -> list[AnsInfo]:
         answer = all_df["Answer"][i]
         ans_src_pdf = all_df["Answer_PDF"][i]
 
-        assert isinstance(q_id, str), f"Expected {q_id} to be a str"
-        assert isinstance(answer, str), f"Expected {answer} to be a str"
-        assert isinstance(ans_src_pdf, str), f"Expected {ans_src_pdf} to be a str"
+        assert isinstance(q_id, str), f"Expected q_id to be a str: q_id: '{q_id}'"
+        assert isinstance(answer, str), f"Expected answer to be a str: answer: '{answer}'"
+        assert isinstance(ans_src_pdf, str), f"Expected ans_src_pdf to be a str: ans_src_pdf: '{ans_src_pdf}'"
 
         a_infos.append(AnsInfo(q_id=q_id, answer=answer, ans_src_pdf=ans_src_pdf, pg_inds=pg_inds))
 
@@ -515,27 +511,63 @@ def gen_skill_tree(ssqb_infos: list[QInfo], output_json: str, w_difficulty: bool
 
             tree[info.test][info.domain][info.skill][ind] += 1
         else:
-            if info.skill not in tree[info.test][info.domain]:
-                tree[info.test][info.domain][info.skill] = 0
+            skill = info.skill
 
-            tree[info.test][info.domain][info.skill] += 1
+            # NOTE: What an annoying bug. Can the college board really not make sure that they use a
+            # consistent naming mechanism? I guess it's not suprising...
+            if skill == "Cross-text Connections":
+                skill = "Cross-Text Connections"
+
+            if skill not in tree[info.test][info.domain]:
+                tree[info.test][info.domain][skill] = 0
+
+            tree[info.test][info.domain][skill] += 1
 
     with open(output_json, "w") as f:
         json.dump(tree, f, indent=4)
 
-def create_question_set(json_path: str, q_infos: list[QInfo]) -> None:
-    # The information about the question set's composition is found from the json
-    with open(json_path, "r") as f:
-        set_info = json.load(f)
+def put_answers_on_page(doc: Document, answers: list[tuple[str, str]]):
+    # This was calculated assuming the page will have a DPI of 72
+    width, height = (612, 792)
+    pg = doc.new_page(width=width, height=height)
 
-    output_pdf_path: str = set_info["outputPath"]
-    total_questions: int = set_info["totalQuestions"]
-    specific_ids: list[str] = set_info["chosenIds"]
+    margin = (48, 48)
+    h_indent = 0.2 * margin[0]
+    fsz = 13
+    title_line_h = 2*fsz + 1*(2*fsz)
+    pg.insert_text((margin[0], margin[1] + title_line_h), "Answer key", fontsize=2*fsz)
+
+
+    line_h = fsz + 0.5*fsz
+    total_vert_space = (height - (margin[1] + title_line_h)) - 2*margin[1]
+    row_count = int(total_vert_space // line_h)
+    col_count = math.ceil(len(answers) / row_count)
+
+    row_h = line_h
+    col_w = (width - (2*margin[0])) / col_count
+
+    # i = r*width + c
+    # i - c = r*width
+    # (i - c) / width = r; given c
+    for (i, (q_id, answer)) in enumerate(answers):
+        c = i % col_count
+        r = (i - c) / col_count
+        pg.insert_text(
+            # (start + c*col_w, start + r*row_h)
+            point=((margin[0] + h_indent) + c*col_w, (margin[1] + title_line_h) + (r + 1)*row_h),
+            text=f"{q_id:9}. {answer}",
+            fontsize=fsz,
+        )
+
+def create_question_set(input_json: dict, q_infos: list[QInfo], a_infos: list[AnsInfo]) -> None:
+    output_pdf_path: str = input_json["outputPath"]
+    requested_count: int = input_json["totalQuestions"]
+    specific_ids: list[str] = input_json["chosenIds"]
     all_chosen: list[QInfo] = []
 
     # Subject based filtering
     for test in ["RW", "Math"]:
-        for domain, skills_info in set_info[test].items():
+        for domain, skills_info in input_json[test].items():
             for skill, qty in skills_info.items():
                 # Find questions that test the expected skill
                 valid_qs_inds: list[int] = []
@@ -558,12 +590,26 @@ def create_question_set(json_path: str, q_infos: list[QInfo]) -> None:
         if (q_info.q_id in specific_ids) and (q_info.q_id not in all_chosen_so_far):
             all_chosen.append(q_info)
 
-    assert len(all_chosen) <= total_questions, (
-        f"Requested questions ({total_questions}) && Provided questions ({len(all_chosen)})"
+    assert len(all_chosen) <= requested_count, (
+        f"Questions that satisfy reqs ({len(all_chosen)}) <= Requested questions ({requested_count}): False"
     )
-    gen_pdf_from_ssqb_infos(all_chosen, output_pdf_path)
 
-def gen_pdf_from_ssqb_infos(ssqb_infos: list[QInfo], output_pdf_path: str) -> None:
+    doc: Document = gen_pdf_from_q_infos(all_chosen)
+
+    if len(a_infos) == 0:
+        doc.save(output_pdf_path)
+        return
+
+    ans_list: list[tuple[str, str]] = []
+    for chosen in all_chosen:
+        for a_info in a_infos:
+            if a_info.q_id == chosen.q_id:
+                ans_list.append((a_info.q_id, a_info.answer))
+
+    put_answers_on_page(doc, ans_list)
+    doc.save(output_pdf_path)
+
+def gen_pdf_from_q_infos(ssqb_infos: list[QInfo]) -> Document:
     out_pdf: Document = Document()
 
     print(f"Saving {len(ssqb_infos)} questions...")
@@ -584,18 +630,17 @@ def gen_pdf_from_ssqb_infos(ssqb_infos: list[QInfo], output_pdf_path: str) -> No
             if not is_page_empty(doc.load_page(pg_no)):
                 out_pdf.insert_pdf(doc, from_page=pg_no, to_page=pg_no)
 
-    out_pdf.save(output_pdf_path)
+    return out_pdf
 
 def usage(program: str) -> None:
-    print(f"USAGE: {program} [MODES] [ARGS]\n")
+    print(f"USAGE: {program} <MODES> [ARGS]\n")
     print("Modes:")
-    print("        qset <INPUT_JSON> |  Generate question set given an input json for filtering")
-    print("        akey <INPUT_PDF>  |  Generate answer key given a previously generated question pdf")
-    print("      allids <OUT_JSON>   |  Get a json containing the id of all questions")
-    print("    parse-qs <OUT_CSV>    |  Categorize questions pdfs and output a single csv")
-    print("   parse-as <OUT_CSV>     |  Categorize answers pdfs and output a single csv")
-    print("   skilltree              |  Generate a skill tree with quantity; save into json")
-    print("        help              |  Get this help message")
+    print("        qset <INPUT_JSON>  |  Generate question set given an input json for filtering")
+    print("      allids <OUT_JSON>    |  Get a json containing the id of all questions")
+    print("    parse-qs <OUT_CSV>     |  Categorize questions pdfs and output a single csv")
+    print("    parse-as <OUT_CSV>      |  Categorize answers pdfs and output a single csv")
+    print("   skilltree               |  Generate a skill tree with quantity; save into json")
+    print("        help               |  Get this help message")
 
 def export_all_qids(ssqb_infos: list[QInfo], out_path: str) -> None:
     all_ids: list[str] = [ssqb.q_id for ssqb in ssqb_infos]
@@ -639,7 +684,6 @@ if __name__ == "__main__":
 
             out_csv: str = sys.argv[2]
             parse_all_a_pdfs(file_paths, out_csv)
-
             print(f"Complete! Exported answer PDFs info to '{out_csv}'")
 
         case "qset":
@@ -650,17 +694,18 @@ if __name__ == "__main__":
 
             q_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
             out_json: str = sys.argv[2]
-            create_question_set(out_json, q_infos)
-            print(f"Complete! Exported PDF to '{out_json}'")
+            # The information about the question set's composition is found from the json
+            with open("input.json", "r") as f:
+                input_json = json.load(f)
 
-        case "akey":
-            if len(sys.argv) == 2:
-                print("ERROR: please provide input json to use for filtering.")
-                print("Try rerunning this command with the 'help' flag for more info.")
-                sys.exit(1)
+            incl_ans_key = input_json["includeAnsKey"]
+            assert isinstance(incl_ans_key, bool)
+            a_infos: list[AnsInfo]  = []
+            if incl_ans_key:
+                a_infos = import_a_parsed_info("./all-a-parsed.csv")
 
-            a_infos: list[AnsInfo] = import_a_parsed_info("./all-a-parsed.csv")
-            assert False
+            create_question_set(input_json, q_infos, a_infos)
+            print(f"Complete! Exported PDF from filters at '{out_json}'")
 
         case "allids":
             if len(sys.argv) == 2:
