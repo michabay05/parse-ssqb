@@ -1,51 +1,51 @@
 {
     "Math": {
         "Advanced Math": {
-            "Nonlinear equations in one variable and systems of equations in two variables": 217,
-            "Nonlinear functions": 313,
-            "Equivalent expressions": 166
+            "Nonlinear equations in one variable and systems of equations in two variables": 167,
+            "Nonlinear functions": 229,
+            "Equivalent expressions": 134
         },
         "Algebra": {
-            "Linear functions": 213,
-            "Systems of two linear equations in two variables": 158,
-            "Linear inequalities in one or two variables": 103,
-            "Linear equations in one variable": 150,
-            "Linear equations in two variables": 177
+            "Linear functions": 137,
+            "Linear equations in one variable": 97,
+            "Linear equations in two variables": 117,
+            "Systems of two linear equations in two variables": 107,
+            "Linear inequalities in one or two variables": 73
         },
         "Geometry and Trigonometry": {
-            "Lines, angles, and triangles": 119,
-            "Area and volume": 129,
-            "Right triangles and trigonometry": 82,
-            "Circles": 80
+            "Lines, angles, and triangles": 105,
+            "Area and volume": 120,
+            "Right triangles and trigonometry": 70,
+            "Circles": 69
         },
         "Problem-Solving and Data Analysis": {
-            "Two-variable data: Models and scatterplots": 95,
-            "Ratios, rates, proportional relationships, and units": 119,
-            "Probability and conditional probability": 72,
-            "Inference from sample statistics and margin of error": 40,
-            "One-variable data: Distributions and measures of center and spread": 113,
-            "Percentages": 110,
-            "Evaluating statistical claims: Observational studies and experiments": 22
+            "Two-variable data: Models and scatterplots": 71,
+            "Ratios, rates, proportional relationships, and units": 93,
+            "Probability and conditional probability": 63,
+            "Inference from sample statistics and margin of error": 32,
+            "One-variable data: Distributions and measures of center and spread": 85,
+            "Percentages": 87,
+            "Evaluating statistical claims: Observational studies and experiments": 18
         }
     },
     "Reading and Writing": {
         "Craft and Structure": {
-            "Text Structure and Purpose": 177,
-            "Words in Context": 294,
-            "Cross-Text Connections": 93
+            "Text Structure and Purpose": 97,
+            "Words in Context": 147,
+            "Cross-Text Connections": 57
         },
         "Standard English Conventions": {
-            "Boundaries": 240,
-            "Form, Structure, and Sense": 236
+            "Boundaries": 169,
+            "Form, Structure, and Sense": 176
         },
         "Expression of Ideas": {
-            "Transitions": 209,
-            "Rhetorical Synthesis": 248
+            "Transitions": 160,
+            "Rhetorical Synthesis": 192
         },
         "Information and Ideas": {
-            "Inferences": 169,
-            "Command of Evidence": 347,
-            "Central Ideas and Details": 164
+            "Command of Evidence": 247,
+            "Central Ideas and Details": 113,
+            "Inferences": 125
         }
     }
 }

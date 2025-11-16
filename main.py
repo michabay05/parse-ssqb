@@ -550,12 +550,15 @@ def put_answers_on_page(doc: Document, answers: list[tuple[str, str]]):
     # i - c = r*width
     # (i - c) / width = r; given c
     for (i, (q_id, answer)) in enumerate(answers):
-        c = i % col_count
-        r = (i - c) / col_count
+        r = i % row_count
+        c = (i - r) / row_count
+        # c = i % col_count
+        # r = (i - c) / col_count
         pg.insert_text(
             # (start + c*col_w, start + r*row_h)
             point=((margin[0] + h_indent) + c*col_w, (margin[1] + title_line_h) + (r + 1)*row_h),
-            text=f"{q_id:9}. {answer}",
+            # text=f"({i+1:4}) {q_id:9}; {answer}",
+            text=f"{i+1:4}. {q_id:10}; {answer}",
             fontsize=fsz,
         )
 
