@@ -52,29 +52,6 @@ class Timer:
 
         print(f"[{diff_str:>10}] {msg}")
 
-# @dataclass
-# class FileInfo:
-#     subject: str
-#     difficulty: Level
-#     excluded: bool
-
-# def pdf_parsed_output_name(info: FileInfo) -> str:
-#     excluded_str = "excluded" if info.excluded else ""
-
-#     return f"./parsed/{info.subject}-{excluded_str}-{info.difficulty}"
-
-# def dedup_pdf_output_path(orig_pdf_path: str) -> str:
-#     return f"./dedup/dedup-{'-'.join(orig_pdf_path.split('-')[1:])}"
-
-# PDF_PATHS: dict[str, FileInfo] = {
-#     "./dedup/dedup-math-excluded-easy.pdf": FileInfo("Math", "easy", True),
-#     "./dedup/dedup-math-excluded-medium.pdf": FileInfo("Math", "medium", True),
-#     "./dedup/dedup-math-excluded-hard.pdf": FileInfo("Math", "hard", True),
-#     "./dedup/dedup-rw-excluded-easy.pdf": FileInfo("RW", "easy", True),
-#     "./dedup/dedup-rw-excluded-medium.pdf": FileInfo("RW", "medium", True),
-#     "./dedup/dedup-rw-excluded-hard.pdf": FileInfo("RW", "hard", True)
-# }
-
 timer: Timer = Timer()
 PAGE_DELIMITER: str = "_"
 
@@ -87,6 +64,7 @@ def pages_as_str(page_inds: list[int]) -> str:
         pg_str += PAGE_DELIMITER + str(pg_ind + 1)
 
     return pg_str
+
 
 @dataclass
 class QInfo:
@@ -167,6 +145,7 @@ def get_difficulty(doc: Document, page: Page, drawing_only: bool) -> Level | Non
             # and depending on its color, I will determine the page's labeled difficulty
             y = int(pil_img.height / 2)
             for x in [5, pil_img.width / 2, pil_img.width - 5]:
+
                 color = pil_img.getpixel((int(x), y))
                 assert isinstance(color, tuple)
                 if color == diff_i_color:
@@ -215,8 +194,8 @@ def parse_question_pdf(path: str, excluded: bool) -> list[QInfo]:
 
             difficulty: Level | None = get_difficulty(doc, page, drawing_only=True)
             if difficulty is None:
-                # This is a backup way of finding the difficulty; I should be to find out the
-                # difficulty purely through its drawings, but you never know . . .
+                # This is a backup way of finding the difficulty; it should be able to find
+                # out the difficulty purely through its drawings, but you never know . . .
                 difficulty: Level | None = get_difficulty(doc, page, drawing_only=False)
                 assert difficulty is not None, f"[{path}, pg: {page_ind + 1}] Unable to find difficulty"
 
@@ -242,6 +221,8 @@ def parse_question_pdf(path: str, excluded: bool) -> list[QInfo]:
             curr.test = test
             curr.domain = domain
             curr.skill = skill
+
+    q_infos.append(curr)
 
     return q_infos
 
@@ -562,7 +543,9 @@ def put_answers_on_page(doc: Document, answers: list[tuple[str, str]]):
             fontsize=fsz,
         )
 
-def create_question_set(input_json: dict, q_infos: list[QInfo], a_infos: list[AnsInfo]) -> None:
+def create_question_set(input_json: dict, q_infos: list[QInfo],
+    a_infos: list[AnsInfo], shuffle: bool = True
+) -> None:
     output_pdf_path: str = input_json["outputPath"]
     requested_count: int = input_json["totalQuestions"]
     specific_ids: list[str] = input_json["chosenIds"]
@@ -596,6 +579,66 @@ def create_question_set(input_json: dict, q_infos: list[QInfo], a_infos: list[An
     assert len(all_chosen) <= requested_count, (
         f"Questions that satisfy reqs ({len(all_chosen)}) <= Requested questions ({requested_count}): False"
     )
+
+    if shuffle:
+        random.shuffle(all_chosen)
+
+    doc: Document = gen_pdf_from_q_infos(all_chosen)
+
+    if len(a_infos) == 0:
+        doc.save(output_pdf_path)
+        return
+
+    ans_list: list[tuple[str, str]] = []
+    for chosen in all_chosen:
+        for a_info in a_infos:
+            if a_info.q_id == chosen.q_id:
+                ans_list.append((a_info.q_id, a_info.answer))
+
+    put_answers_on_page(doc, ans_list)
+    doc.save(output_pdf_path)
+
+def create_question_set_w_diff(input_json: dict, q_infos: list[QInfo],
+    a_infos: list[AnsInfo], prob: dict[Level, float], shuffle: bool = True
+) -> None:
+    assert prob["easy"] + prob["medium"] + prob["hard"] == 1.0
+
+    output_pdf_path: str = input_json["outputPath"]
+    requested_count: int = input_json["totalQuestions"]
+    specific_ids: list[str] = input_json["chosenIds"]
+    qs_by_diff: dict[Level, list[int]] = {
+        "easy": [],
+        "medium": [],
+        "hard": [],
+    }
+
+    # Subject based filtering
+    for test in ["RW", "Math"]:
+        for domain, skills_info in input_json[test].items():
+            for skill, qty in skills_info.items():
+                # Find questions that test the expected skill
+                for i, q in enumerate(q_infos):
+                    if q.domain == domain and q.skill == skill:
+                        qs_by_diff[q.level].append(i)
+
+    all_chosen: list[QInfo] = []
+    max_random_q_count = requested_count - len(specific_ids)
+    for diff, q_inds in qs_by_diff.items():
+        n = int(max_random_q_count * prob[diff])
+        all_chosen.extend([q_infos[ind] for ind in random.choices(q_inds, k=n)])
+
+    # Specific id filtering
+    all_chosen_so_far = [chosen.q_id for chosen in all_chosen]
+    for q_info in q_infos:
+        if (q_info.q_id in specific_ids) and (q_info.q_id not in all_chosen_so_far):
+            all_chosen.append(q_info)
+
+    assert len(all_chosen) <= requested_count, (
+        f"Questions that satisfy reqs ({len(all_chosen)}) <= Requested questions ({requested_count}): False"
+    )
+
+    if shuffle:
+        random.shuffle(all_chosen)
 
     doc: Document = gen_pdf_from_q_infos(all_chosen)
 
@@ -726,6 +769,45 @@ if __name__ == "__main__":
             out_json: str = "skill-tree.json"
             gen_skill_tree(q_infos, out_json)
             print(f"Complete! Exported skill tree to '{out_json}'")
+
+        case "derive-answers-from-qpdf":
+            pdf_path = "./stand-engl-conv-exam.pdf"
+            out_path = "./stand-engl-conv-exam-w-ans.pdf"
+            # q_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
+            q_infos: list[QInfo] = parse_question_pdf(pdf_path, False)
+            a_infos = import_a_parsed_info("./all-a-parsed.csv")
+
+            ans_list: list[tuple[str, str]] = []
+            for chosen in q_infos:
+                for a_info in a_infos:
+                    if a_info.q_id == chosen.q_id:
+                        ans_list.append((a_info.q_id, a_info.answer))
+
+            doc = Document()
+            put_answers_on_page(doc, ans_list)
+            doc.save(out_path)
+
+        case "custom":
+            q_infos: list[QInfo] = import_q_parsed_info("./all-q-parsed.csv")
+            # The information about the question set's composition is found from the json
+            with open("input.json", "r") as f:
+                input_json = json.load(f)
+
+            incl_ans_key = input_json["includeAnsKey"]
+            assert isinstance(incl_ans_key, bool)
+            a_infos: list[AnsInfo]  = []
+            if incl_ans_key:
+                a_infos = import_a_parsed_info("./all-a-parsed.csv")
+
+            with open("input.json", "r") as f:
+                input_json = json.load(f)
+
+            create_question_set_w_diff(input_json, q_infos, a_infos, {
+                "easy": 0.1,
+                "medium": 0.5,
+                "hard": 0.4,
+            })
+            print(f"[Custom] Complete! Exported PDF from filters.")
 
         case "help":
             usage(sys.argv[0])

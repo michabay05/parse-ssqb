@@ -1,0 +1,14 @@
+{
+    "outputPath": "craft-structure-exam.pdf",
+    "totalQuestions": 30,
+    "includeAnsKey": true,
+    "RW": {
+        "Craft and Structure": {
+            "Text Structure and Purpose": 5,
+            "Words in Context": 5,
+            "Cross-Text Connections": 5
+        }
+    },
+    "Math": {},
+    "chosenIds": []
+}
