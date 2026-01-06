@@ -26,7 +26,7 @@ app.post("/filter-req", (req, res) => {
     pdfOutputPath = req.body["outputPath"];
 
     exec(
-        "uv run main.py qset input.json",
+        "uv run generate.py qset input.json",
         { cwd: "../" },
         (error, stdout, stderr) => {
             if (error) {
@@ -51,7 +51,7 @@ app.get("/download", (req, res) => {
 
 app.get("/all-ids", (req, res) => {
     exec(
-        "uv run main.py allids qids.json",
+        "uv run generate.py allids qids.json",
         { cwd: "../" },
         (error, stdout, stderr) => {
             if (error) {
@@ -73,7 +73,7 @@ app.get("/all-ids", (req, res) => {
 
 app.get("/skill-tree", (req, res) => {
     exec(
-        "uv run main.py skilltree",
+        "uv run generate.py skilltree",
         { cwd: "../" },
         (error, stdout, stderr) => {
             if (error) {

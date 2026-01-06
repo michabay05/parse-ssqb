@@ -1,14 +1,16 @@
 {
-    "outputPath": "craft-structure-exam.pdf",
+    "outputPath": "m1-algebra-hw.pdf",
     "totalQuestions": 30,
-    "includeAnsKey": true,
-    "RW": {
-        "Craft and Structure": {
-            "Text Structure and Purpose": 5,
-            "Words in Context": 5,
-            "Cross-Text Connections": 5
+    "RW": {},
+    "Math": {
+        "Algebra": {
+            "Linear functions": 6,
+            "Linear equations in one variable": 6,
+            "Linear equations in two variables": 6,
+            "Systems of two linear equations in two variables": 6,
+            "Linear inequalities in one or two variables": 6
         }
     },
-    "Math": {},
-    "chosenIds": []
+    "chosenIds": [],
+    "includeAnsKey": true
 }
