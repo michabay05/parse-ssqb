@@ -277,13 +277,13 @@ class QGeneration:
 def usage(program: str) -> None:
     print(f"USAGE: {program} <MODES> [ARGS]\n")
     print("Modes:")
-    print("         qset <INPUT_JSON>     |  Generate question set given an input json for filtering")
-    print("       allids <OUT_JSON>       |  Get a json containing the id of all questions")
-    print("     parse-qs <OUT_CSV>        |  Categorize questions pdfs and output a single csv")
-    print("     parse-as <OUT_CSV>        |  Categorize answers pdfs and output a single csv")
-    print("    skilltree                  |  Generate a skill tree with quantity; save into json")
-    print(" regen-ans <IN_PDF> <OUT_PDF>  |  Regenerate answers from a question pdf")
-    print("         help                  |  Get this help message")
+    print("         qset <INPUT_JSON>            |  Generate question set given an input json for filtering")
+    print("       allids < OUT_JSON >            |  Get a json containing the id of all questions")
+    print("     parse-qs < OUT_CSV  >            |  Categorize questions pdfs and output a single csv")
+    print("     parse-as < OUT_CSV  >            |  Categorize answers pdfs and output a single csv")
+    print("    skilltree                         |  Generate a skill tree with quantity; save into json")
+    print("    regen-ans <  IN_PDF  > <OUT_PDF>  |  Regenerate answers from a question pdf")
+    print("         help                         |  Get this help message")
 
 if __name__ == "__main__":
     program: str = sys.argv[0]
