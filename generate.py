@@ -3,6 +3,7 @@ import json, math, os, random, sys
 
 import fitz
 from pymupdf import Document
+import pandas as pd
 
 import prepare
 from prepare import AnsInfo, Level, QInfo
@@ -137,7 +138,7 @@ class QGeneration:
             for domain, skills_info in input_json[test].items():
                 for skill in skills_info.keys():
                     # Find questions that test the expected skill
-                    for i, q in enumerate(q_infos):
+                    for i, q in enumerate(self.q_infos):
                         if q.domain == domain and q.skill == skill:
                             qs_by_diff[q.level].append(i)
 
@@ -150,7 +151,7 @@ class QGeneration:
             for diff, q_inds in qs_by_diff.items():
                 # NOTE: Ensure that there is at least one question of a given difficulty
                 n = max(int(max_random_q_count * prob[diff]), 1)
-                all_chosen.extend([q_infos[ind] for ind in random.choices(q_inds, k=n)])
+                all_chosen.extend([self.q_infos[ind] for ind in random.choices(q_inds, k=n)])
         else:
             # Flatten the dictionary's values into a 1D list
             all_valids = []
@@ -158,7 +159,7 @@ class QGeneration:
                 all_valids.extend(q_inds)
 
             all_chosen.extend(
-                [q_infos[c_i] for c_i in random.choices(all_valids, k=max_random_q_count)]
+                [self.q_infos[c_i] for c_i in random.choices(all_valids, k=max_random_q_count)]
             )
 
         # NOTE: The expectation is that the random selection process produces N or more questions
@@ -170,7 +171,7 @@ class QGeneration:
 
         # Specific id filtering
         all_chosen_so_far = [chosen.q_id for chosen in all_chosen]
-        for q_info in q_infos:
+        for q_info in self.q_infos:
             if (q_info.q_id in specific_ids) and (q_info.q_id not in all_chosen_so_far):
                 all_chosen.append(q_info)
 
@@ -181,6 +182,10 @@ class QGeneration:
         if shuffle:
             random.shuffle(all_chosen)
 
+        base_name: str = output_pdf_path.removesuffix(".pdf")
+        ans_template_path: str = base_name + "-empty.csv"
+        self.gen_answer_template(all_chosen, ans_template_path)
+
         doc: Document = self.gen_pdf_from_q_infos(all_chosen)
         if not incl_ans_key:
             doc.save(output_pdf_path)
@@ -188,12 +193,40 @@ class QGeneration:
 
         ans_list: list[tuple[str, str]] = []
         for chosen in all_chosen:
-            for a_info in a_infos:
+            for a_info in self.a_infos:
                 if a_info.q_id == chosen.q_id:
                     ans_list.append((a_info.q_id, a_info.answer))
 
-        self.put_answers_on_page(doc, ans_list)
+        # self.put_answers_on_page(doc, ans_list)
+        self.export_answer_csv(ans_list, base_name + "-key.csv")
         doc.save(output_pdf_path)
+
+    # ans_list: (question_id, answer)
+    def export_answer_csv(self, ans_list: list[tuple[str, str]], answers_csv_path: str) -> None:
+        data: dict = {
+            "No.": [],
+            "Question ID": [],
+            "Answers Key": []
+        }
+        for i, (q_id, answer) in enumerate(ans_list):
+            data["No."].append(i + 1)
+            data["Question ID"].append(q_id)
+            data["Answers Key"].append(answer)
+
+        pd.DataFrame(data).to_csv(answers_csv_path, index=False)
+
+    def gen_answer_template(self, all_chosen: list[QInfo], ans_template_path: str) -> None:
+        data: dict = {
+            "No.": [],
+            "Question ID": [],
+            "Answers": []
+        }
+        for i, chosen in enumerate(all_chosen):
+            data["No."].append(i + 1)
+            data["Question ID"].append(chosen.q_id)
+            data["Answers"].append("")
+
+        pd.DataFrame(data).to_csv(ans_template_path, index=False)
 
     def gen_pdf_from_q_infos(self, q_infos: list[QInfo]) -> Document:
         out_pdf: Document = Document()
@@ -253,8 +286,9 @@ def usage(program: str) -> None:
     print("         help                  |  Get this help message")
 
 if __name__ == "__main__":
+    program: str = sys.argv[0]
     if len(sys.argv) == 1:
-        usage(sys.argv[0])
+        usage(program)
         sys.exit(1)
 
     mode: str = sys.argv[1]
@@ -294,8 +328,8 @@ if __name__ == "__main__":
             qg.derive_answers_from_qpdf(args[0], args[1])
 
         case "help":
-            usage(sys.argv[0])
+            usage(program)
 
         case "_":
-            usage(sys.argv[0])
+            usage(program)
             print(f"\nERROR: Unknown mode: '{mode}'")
