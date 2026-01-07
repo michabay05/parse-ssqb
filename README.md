@@ -5,6 +5,6 @@
 ## Quickstart
 ```
 python -m venv .venv
-.venv\Scripts\activate
+.venv/bin/activate
 python main.py
 ```
