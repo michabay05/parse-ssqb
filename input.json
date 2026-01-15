@@ -1,16 +1,21 @@
 {
-    "outputPath": "m1-algebra-hw.pdf",
-    "totalQuestions": 30,
+    "outputPath": "m2-desmos1.pdf",
+    "totalQuestions": 10,
     "RW": {},
     "Math": {
         "Algebra": {
-            "Linear functions": 6,
-            "Linear equations in one variable": 6,
-            "Linear equations in two variables": 6,
-            "Systems of two linear equations in two variables": 6,
-            "Linear inequalities in one or two variables": 6
+            "Systems of two linear equations in two variables": 7
+        },
+        "Advanced Math": {
+            "Nonlinear equations in one variable and systems of equations in two variables": 3
         }
     },
+    "prob": {
+        "easy": 0.2,
+        "medium": 0.4,
+        "hard": 0.4
+    },
     "chosenIds": [],
-    "includeAnsKey": true
+    "includeAnsKey": true,
+    "includeAnsTemplate": false
 }

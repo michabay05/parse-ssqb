@@ -1,5 +1,5 @@
 from pathlib import Path
-import json, math, os, random, sys
+import json, math, os, random, re, sys
 
 import fitz
 from pymupdf import Document
@@ -121,12 +121,14 @@ class QGeneration:
                 fontsize=fsz,
             )
 
-    def create_question_set(self, input_json: dict, prob: dict[Level, float] = {},
-        shuffle: bool = True, incl_ans_key: bool = True
-    ) -> None:
+    def create_question_set(self, input_json: dict, shuffle: bool = True) -> None:
         output_pdf_path: str = input_json["outputPath"]
         requested_count: int = input_json["totalQuestions"]
         specific_ids: list[str] = input_json["chosenIds"]
+        prob: dict[Level, float] = input_json["prob"]
+        incl_ans_key: bool = input_json["includeAnsKey"]
+        incl_ans_temp: bool = input_json["includeAnsTemplate"]
+
         qs_by_diff: dict[Level, list[int]] = {
             "easy": [],
             "medium": [],
@@ -182,24 +184,24 @@ class QGeneration:
         if shuffle:
             random.shuffle(all_chosen)
 
-        base_name: str = output_pdf_path.removesuffix(".pdf")
-        ans_template_path: str = base_name + "-empty.csv"
-        self.gen_answer_template(all_chosen, ans_template_path)
-
         doc: Document = self.gen_pdf_from_q_infos(all_chosen)
-        if not incl_ans_key:
-            doc.save(output_pdf_path)
-            return
-
-        ans_list: list[tuple[str, str]] = []
-        for chosen in all_chosen:
-            for a_info in self.a_infos:
-                if a_info.q_id == chosen.q_id:
-                    ans_list.append((a_info.q_id, a_info.answer))
-
-        # self.put_answers_on_page(doc, ans_list)
-        self.export_answer_csv(ans_list, base_name + "-key.csv")
         doc.save(output_pdf_path)
+
+        if incl_ans_temp:
+            base_name: str = output_pdf_path.removesuffix(".pdf")
+            ans_template_path: str = base_name + "-empty.csv"
+            self.gen_answer_template(all_chosen, ans_template_path)
+
+        if incl_ans_key:
+            base_name: str = output_pdf_path.removesuffix(".pdf")
+            ans_list: list[tuple[str, str]] = []
+            for chosen in all_chosen:
+                for a_info in self.a_infos:
+                    if a_info.q_id == chosen.q_id:
+                        ans_list.append((a_info.q_id, a_info.answer))
+
+            # self.put_answers_on_page(doc, ans_list)
+            self.export_answer_csv(ans_list, base_name + "-key.csv")
 
     # ans_list: (question_id, answer)
     def export_answer_csv(self, ans_list: list[tuple[str, str]], answers_csv_path: str) -> None:
@@ -211,7 +213,7 @@ class QGeneration:
         for i, (q_id, answer) in enumerate(ans_list):
             data["No."].append(i + 1)
             data["Question ID"].append(q_id)
-            data["Answers Key"].append(answer)
+            data["Answers"].append(answer)
 
         pd.DataFrame(data).to_csv(answers_csv_path, index=False)
 
@@ -227,6 +229,79 @@ class QGeneration:
             data["Answers"].append("")
 
         pd.DataFrame(data).to_csv(ans_template_path, index=False)
+
+    def check_answers(self, student_ans_path: str, ans_key_path: str) -> tuple[int, int]:
+        res_df = pd.read_csv(student_ans_path)
+        ans_df = pd.read_csv(ans_key_path)
+        assert len(res_df) == len(ans_df), f"{len(res_df)} == {len(ans_df)}"
+
+        id_col = "Question ID"
+        ans_col = "Answers"
+
+        # Sort the dataframes by the id cols
+        res_df.sort_values(by=id_col, inplace=True)
+        ans_df.sort_values(by=id_col, inplace=True)
+
+        # NOTE: Convert from dataframe to pairs of id and answers
+        responses: list[tuple[str, str]] = [
+            (id, str(res)) for id, res in zip(res_df[id_col], res_df[ans_col])]
+        answers: list[tuple[str, str]] = [
+            (id, str(ans)) for id, ans in zip(ans_df[id_col], ans_df[ans_col])]
+        assert len(responses) == len(answers)
+
+        correct, total = 0, 0
+        for i in range(len(responses)):
+            r_id, res = responses[i]
+            a_id, ans = answers[i]
+            assert r_id == a_id, "ID mismatch after sorting by id"
+            total += 1
+
+            if res == "nan":
+                # Found an unanswered question
+                continue
+
+            math_mode = any([ltr.isdigit() for ltr in ans])
+            if not math_mode:
+                # NOTE: Since it doesn't contain digits, just compare the strings
+                correct += 1 if res == ans else 0
+                continue
+
+            if res == ans:
+                # NOTE: Even though it contains digits, just compare the strings to see if it
+                # matches. If it does not, proceed to math mode evaluation.
+                correct += 1
+                continue
+
+            re_pat = r"([\d]+\/[\d]+)|([\d.]+)"
+            # Regex match for response
+            rm = re.findall(re_pat, res, re.MULTILINE)[0]
+            # Regex match for answer
+            am = re.findall(re_pat, ans, re.MULTILINE)[0]
+
+            assert len(rm) == 2
+            assert len(am) == 2
+
+            # NOTE: Only one of these two (the fraction or decimal) should be matched
+            assert len(rm[0]) == 0 or len(rm[1]) == 0
+            assert len(am[0]) == 0 or len(am[1]) == 0
+
+            # First, convert any fraction into a decimal value
+            rmd, amd = 0.0, 0.0
+            if len(rm[0]) > 0:
+                nums = str(rm[0]).strip().split('/')
+                rmd = float(nums[0]) / float(nums[1])
+            else:
+                rmd = float(rm[1])
+
+            if len(am[0]) > 0:
+                nums = str(am[0]).strip().split('/')
+                amd = float(nums[0]) / float(nums[1])
+            else:
+                amd = float(am[1])
+
+            correct += 1 if abs(rmd - amd) < 1e-3 else 0
+
+        return (correct, total)
 
     def gen_pdf_from_q_infos(self, q_infos: list[QInfo]) -> Document:
         out_pdf: Document = Document()
@@ -277,12 +352,13 @@ class QGeneration:
 def usage(program: str) -> None:
     print(f"USAGE: {program} <MODES> [ARGS]\n")
     print("Modes:")
-    print("         qset <INPUT_JSON>            |  Generate question set given an input json for filtering")
+    print("         qset < IN_JSON  >            |  Generate question set given an input json for filtering")
     print("       allids < OUT_JSON >            |  Get a json containing the id of all questions")
     print("     parse-qs < OUT_CSV  >            |  Categorize questions pdfs and output a single csv")
     print("     parse-as < OUT_CSV  >            |  Categorize answers pdfs and output a single csv")
     print("    skilltree                         |  Generate a skill tree with quantity; save into json")
     print("    regen-ans <  IN_PDF  > <OUT_PDF>  |  Regenerate answers from a question pdf")
+    print("        grade <  IN_CSV  > <ANS_CSV>  |  Grade responses against answer csv")
     print("         help                         |  Get this help message")
 
 if __name__ == "__main__":
@@ -305,10 +381,7 @@ if __name__ == "__main__":
             with open(input_path, "r") as f:
                 input_json = json.load(f)
 
-            w_ans_key = input_json["includeAnsKey"]
-            assert isinstance(w_ans_key, bool)
-
-            qg.create_question_set(input_json, incl_ans_key=w_ans_key)
+            qg.create_question_set(input_json)
             print(f"Complete! Exported PDF from filters at '{input_path}'")
 
         case "allids":
@@ -320,16 +393,24 @@ if __name__ == "__main__":
             print(f"Complete! Exported skill tree to '{out_json}'")
 
         case "regen-ans":
-            if len(args) < 2:
-                print("ERROR: please provide input json to use for filtering.")
+            if len(args) != 2:
+                print("ERROR: provide input json to use for filtering.")
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
             qg.derive_answers_from_qpdf(args[0], args[1])
 
+        case "grade":
+            if len(args) != 2:
+                print("ERROR: provide response and answer csvs only.")
+                print("Try rerunning this command with the 'help' flag for more info.")
+
+            correct, total = qg.check_answers("sample-response2.csv", "sample-key.csv")
+            print(correct, "out of", total)
+
         case "help":
             usage(program)
 
-        case "_":
+        case _:
             usage(program)
             print(f"\nERROR: Unknown mode: '{mode}'")
