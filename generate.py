@@ -122,6 +122,9 @@ class QGeneration:
             )
 
     def create_question_set(self, input_json: dict, shuffle: bool = True) -> None:
+        # TODO: fix duplication potential duplication of questions.
+        # - It happens because the distinction between 'alls' and 'excludeds' is not accounted for.
+
         output_pdf_path: str = input_json["outputPath"]
         requested_count: int = input_json["totalQuestions"]
         specific_ids: list[str] = input_json["chosenIds"]
@@ -132,7 +135,7 @@ class QGeneration:
         qs_by_diff: dict[Level, list[int]] = {
             "easy": [],
             "medium": [],
-            "hard": [],
+            "hard": []
         }
 
         # Subject based filtering
@@ -141,6 +144,7 @@ class QGeneration:
                 for skill in skills_info.keys():
                     # Find questions that test the expected skill
                     for i, q in enumerate(self.q_infos):
+                        if q.excluded: continue
                         if q.domain == domain and q.skill == skill:
                             qs_by_diff[q.level].append(i)
 
@@ -153,16 +157,16 @@ class QGeneration:
             for diff, q_inds in qs_by_diff.items():
                 # NOTE: Ensure that there is at least one question of a given difficulty
                 n = max(int(max_random_q_count * prob[diff]), 1)
-                all_chosen.extend([self.q_infos[ind] for ind in random.choices(q_inds, k=n)])
+                all_chosen.extend([self.q_infos[ind] for ind in random.sample(q_inds, n)])
         else:
             # Flatten the dictionary's values into a 1D list
             all_valids = []
             for q_inds in qs_by_diff.values():
                 all_valids.extend(q_inds)
 
-            all_chosen.extend(
-                [self.q_infos[c_i] for c_i in random.choices(all_valids, k=max_random_q_count)]
-            )
+            all_chosen.extend([
+                self.q_infos[c_i] for c_i in random.sample(all_valids, max_random_q_count)
+            ])
 
         # NOTE: The expectation is that the random selection process produces N or more questions
         # where N = the maximum number of questions that can be randomly generated. The rest of the
@@ -172,10 +176,11 @@ class QGeneration:
         )
 
         # Specific id filtering
-        all_chosen_so_far = [chosen.q_id for chosen in all_chosen]
-        for q_info in self.q_infos:
-            if (q_info.q_id in specific_ids) and (q_info.q_id not in all_chosen_so_far):
-                all_chosen.append(q_info)
+        if len(specific_ids) > 0:
+            all_chosen_so_far = [chosen.q_id for chosen in all_chosen]
+            for q_info in self.q_infos:
+                if (q_info.q_id in specific_ids) and (q_info.q_id not in all_chosen_so_far):
+                    all_chosen.append(q_info)
 
         assert len(all_chosen) <= requested_count, (
             f"Questions that satisfy reqs ({len(all_chosen)}) <= Requested questions ({requested_count}): False"
@@ -208,11 +213,11 @@ class QGeneration:
         data: dict = {
             "No.": [],
             "Question ID": [],
-            "Answers Key": []
+            "Answers": []
         }
         for i, (q_id, answer) in enumerate(ans_list):
             data["No."].append(i + 1)
-            data["Question ID"].append(q_id)
+            data["Question ID"].append(f"\"{q_id}\"")
             data["Answers"].append(answer)
 
         pd.DataFrame(data).to_csv(answers_csv_path, index=False)
@@ -225,7 +230,7 @@ class QGeneration:
         }
         for i, chosen in enumerate(all_chosen):
             data["No."].append(i + 1)
-            data["Question ID"].append(chosen.q_id)
+            data["Question ID"].append(f"\"{chosen.q_id}\"")
             data["Answers"].append("")
 
         pd.DataFrame(data).to_csv(ans_template_path, index=False)
@@ -318,7 +323,9 @@ class QGeneration:
             if len(page_nos) == 1:
                 page_nos.append(page_nos[0])
 
-            assert len(page_nos) == 2, f"A page range should have only 2 numbers -> pages: {page_nos}"
+            assert len(page_nos) <= 3, (
+                f"A page range should have a max of 3 numbers -> pages: {page_nos}; src = '{ssqb.src_pdf}'"
+            )
 
             for pg_no in range(page_nos[0], page_nos[1] + 1):
                 if not prepare.is_page_empty(doc.load_page(pg_no)):
