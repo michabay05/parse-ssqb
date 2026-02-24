@@ -1,10 +1,10 @@
 {
     "outputPath": "sample.pdf",
-    "totalQuestions": 19,
-    "RW": {
+    "Reading and Writing": {
         "Information and Ideas": {
             "Inferences": 3
         },
+        "Craft and Structure": 10,
         "Expression of Ideas": {
             "Transitions": 2,
             "Rhetorical Synthesis": 3
@@ -14,9 +14,14 @@
         "Algebra": {
             "Systems of two linear equations in two variables": 2,
             "Linear inequalities in one or two variables": 5
-        }
+        },
+        "Advanced Math": 15
     },
-    "prob": {},
+    "prob": {
+        "easy": 0.0,
+        "medium": 0.2,
+        "hard": 0.8
+    },
     "chosenIds": [
         "608eeb6e",
         "b0fc3166",

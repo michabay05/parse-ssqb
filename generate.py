@@ -126,23 +126,23 @@ class QGeneration:
             )
 
     def create_question_set_v2(self, input: dict, shuffle: bool = True,
-        incl_ans_temp: bool = True, incl_ans_key: bool = True
-    ) -> list[QInfo]:
+        incl_ans_temp: bool = True, incl_ans_key: bool = True,
         exclude_excludeds: bool = True
+    ) -> list[QInfo]:
         rw_possible_df = self.gather_possible_set("Reading and Writing", input)
         math_possible_df = self.gather_possible_set("Math", input)
-
 
         # Add column for weight (based on difficulty)
         prob_dict: dict[Level, float] = input["prob"]
         new_qdf = pd.concat([rw_possible_df, math_possible_df], ignore_index=True)
-        print(len(new_qdf))
-        new_qdf = new_qdf[new_qdf["Excluded"] == False]
-        print(len(new_qdf))
+        if exclude_excludeds:
+            new_qdf = new_qdf[new_qdf["Excluded"] == False]
 
-        new_qdf["rand_wt"] = np.ones(len(new_qdf))
+        new_qdf["rand_wt"] = np.zeros(len(new_qdf), dtype=np.float64)
+        print(prob_dict)
         for dif, prob in prob_dict.items():
-            new_qdf[new_qdf["Difficulty"] == dif].loc[:, "rand_wt"] = prob
+            print(dif, prob)
+            new_qdf.loc[new_qdf["Difficulty"] == dif, "rand_wt"] = prob
 
         # NOTE: I know this terrible but it will do for now.
         # TODO: Refactor this (at some point...)
@@ -155,55 +155,54 @@ class QGeneration:
         #     ...
 
         chosen_ids: list[str] = []
-        test_df = pd.DataFrame(columns=self.qdf.columns)
+        debug_df = pd.DataFrame(columns=self.qdf.columns)
 
         # Shorter alias: new_qdf <=> df
         df = new_qdf
         for subject in ["Reading and Writing", "Math"]:
             subject_filter: int | dict = input[subject]
             if isinstance(subject_filter, int):
-                print(f"{subject} -> {subject_filter}")
                 filtered = df[df["Test"] == subject]
-                test_df = pd.concat([test_df, filtered])
-                ids = filtered.sample(
-                    n=subject_filter, weights=filtered["rand_wt"])["ID"]
-                print("\t", len(ids))
+                f_rows = filtered.sample(
+                    n=subject_filter, weights="rand_wt", replace=False)
+                debug_df = pd.concat([debug_df, f_rows], ignore_index=True)
 
-                chosen_ids.extend(ids)
+                chosen_ids.extend(f_rows["ID"])
 
             elif isinstance(subject_filter, dict):
                 for domain, dom_filter in subject_filter.items():
                     if isinstance(dom_filter, int):
-                        print(f"{domain} -> {dom_filter}")
                         filtered = df[df["Domain"] == domain]
-                        test_df = pd.concat([test_df, filtered])
-                        ids = filtered.sample(
-                            n=dom_filter, weights=filtered["rand_wt"])["ID"]
-                        print("\t", len(ids))
+                        f_rows = filtered.sample(
+                            n=dom_filter, weights="rand_wt", replace=False)
+                        debug_df = pd.concat([debug_df, f_rows], ignore_index=True)
 
-                        chosen_ids.extend(ids)
+                        chosen_ids.extend(f_rows["ID"])
                     elif isinstance(dom_filter, dict):
 
                         for skill, sk_filter in dom_filter.items():
                             if isinstance(sk_filter, int):
-                                print(f"{skill} -> {sk_filter}")
                                 filtered = df[df["Skill"] == skill]
-                                test_df = pd.concat([test_df, filtered])
-                                ids = filtered.sample(
-                                    n=sk_filter, weights=new_qdf["rand_wt"])["ID"]
-                                print("\t", len(ids))
+                                f_rows = filtered.sample(
+                                    n=sk_filter, weights="rand_wt", replace=False)
+                                debug_df = pd.concat(
+                                    [debug_df, f_rows], ignore_index=True)
 
-                                chosen_ids.extend(ids)
+                                chosen_ids.extend(f_rows["ID"])
 
         # Specific id filtering
-        specific_ids: list[str] = input["chosenIds"]
-        print(f"Specific ids: {len(specific_ids)}")
-        chosen_ids.extend(specific_ids)
+        if "chosenIds" in input:
+            specific_ids = input["chosenIds"]
+            assert isinstance(specific_ids, list)
+            chosen_ids.extend(specific_ids)
 
         chosen_set = list(set(chosen_ids))
 
         if shuffle:
             random.shuffle(chosen_set)
+
+        with open("test.txt", "w") as f:
+            print(debug_df.to_string(), file=f)
 
         # Convert from id strings to QInfo
         chosen_qs: list[QInfo] = []
@@ -213,12 +212,6 @@ class QGeneration:
                 if id == q.q_id:
                     chosen_qs.append(q)
                     break
-
-        print(">>", len(chosen_ids))
-        print(">>", len(chosen_set))
-        print(">>", len(chosen_qs))
-        with open("test.txt", "w") as f:
-            print(test_df.to_string(), file=f)
 
         doc: Document = self.gen_pdf_from_q_infos(chosen_qs)
         output_pdf_path: str = input["outputPath"]
@@ -394,7 +387,7 @@ class QGeneration:
         }
         for i, chosen in enumerate(all_chosen):
             data["No."].append(i + 1)
-            data["Question ID"].append(f"\"{chosen.q_id}\"")
+            data["Question ID"].append(f"'{chosen.q_id}'")
             data["Answers"].append("")
 
         pd.DataFrame(data).to_csv(ans_template_path, index=False)
