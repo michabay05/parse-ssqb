@@ -402,7 +402,7 @@ def import_q_parsed_info(path: str) -> list[QInfo]:
     q_infos: list[QInfo] = []
 
     for i in range(len(all_df)):
-        pages_str = str(all_df["Pages"][i]) # type: ignore
+        pages_str = str(all_df["Pages"][i])
         assert isinstance(pages_str, str)
 
         pages_str: list[str] = pages_str.split(PAGE_DELIMITER)
@@ -433,7 +433,7 @@ def import_q_parsed_info(path: str) -> list[QInfo]:
             test=test,
             domain=domain,
             skill=skill,
-            level=level, # type: ignore
+            level=level,
             excluded=excluded,
             src_pdf=src_pdf,
             pg_inds=pg_inds

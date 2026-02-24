@@ -1,13 +1,16 @@
 from pathlib import Path
+from typing import Literal
 import json, math, os, random, re, sys
 
 import fitz
 from pymupdf import Document
 import pandas as pd
+import numpy as np
 
 import prepare
 from prepare import AnsInfo, Level, QInfo
 
+Subject = Literal["Reading and Writing", "Math"]
 
 class QGeneration:
     def __init__(self,
@@ -24,6 +27,8 @@ class QGeneration:
         except:
             print(f"ERROR: Could not find {a_parsed_path}; answer information loading failed...")
             print("WARN: Either regenerate the parsed csv or find the parsed csv path")
+
+        self.qdf: pd.DataFrame = prepare.q_infos_to_df(self.q_infos)
 
     def parse_pdfs(self,
         q_out_csv: str = "all-q-parsed.csv", a_out_csv: str = "all-a-parsed.csv"
@@ -72,8 +77,7 @@ class QGeneration:
             else:
                 skill = info.skill
 
-                # NOTE: What an annoying bug. Can the college board really not make sure that they use a
-                # consistent naming mechanism? I guess it's not suprising...
+                # NOTE: What an annoying bug. Can CollegeBoard really not make sure that they use a consistent naming mechanism? I guess it's not suprising...
                 if skill == "Cross-text Connections":
                     skill = "Cross-Text Connections"
 
@@ -121,9 +125,169 @@ class QGeneration:
                 fontsize=fsz,
             )
 
+    def create_question_set_v2(self, input: dict, shuffle: bool = True,
+        incl_ans_temp: bool = True, incl_ans_key: bool = True
+    ) -> list[QInfo]:
+        exclude_excludeds: bool = True
+        rw_possible_df = self.gather_possible_set("Reading and Writing", input)
+        math_possible_df = self.gather_possible_set("Math", input)
+
+
+        # Add column for weight (based on difficulty)
+        prob_dict: dict[Level, float] = input["prob"]
+        new_qdf = pd.concat([rw_possible_df, math_possible_df], ignore_index=True)
+        print(len(new_qdf))
+        new_qdf = new_qdf[new_qdf["Excluded"] == False]
+        print(len(new_qdf))
+
+        new_qdf["rand_wt"] = np.ones(len(new_qdf))
+        for dif, prob in prob_dict.items():
+            new_qdf[new_qdf["Difficulty"] == dif].loc[:, "rand_wt"] = prob
+
+        # NOTE: I know this terrible but it will do for now.
+        # TODO: Refactor this (at some point...)
+        # NOTE: Potential solution to this is to change the filter file format into
+        # something where info is stored in flat-style (i.e. no nesting): like .csv
+        # For instance:
+        #     Test, Math, 45
+        #     Domain, Craft and Structure, 10
+        #     Skill, Words in Context, 12
+        #     ...
+
+        chosen_ids: list[str] = []
+        test_df = pd.DataFrame(columns=self.qdf.columns)
+
+        # Shorter alias: new_qdf <=> df
+        df = new_qdf
+        for subject in ["Reading and Writing", "Math"]:
+            subject_filter: int | dict = input[subject]
+            if isinstance(subject_filter, int):
+                print(f"{subject} -> {subject_filter}")
+                filtered = df[df["Test"] == subject]
+                test_df = pd.concat([test_df, filtered])
+                ids = filtered.sample(
+                    n=subject_filter, weights=filtered["rand_wt"])["ID"]
+                print("\t", len(ids))
+
+                chosen_ids.extend(ids)
+
+            elif isinstance(subject_filter, dict):
+                for domain, dom_filter in subject_filter.items():
+                    if isinstance(dom_filter, int):
+                        print(f"{domain} -> {dom_filter}")
+                        filtered = df[df["Domain"] == domain]
+                        test_df = pd.concat([test_df, filtered])
+                        ids = filtered.sample(
+                            n=dom_filter, weights=filtered["rand_wt"])["ID"]
+                        print("\t", len(ids))
+
+                        chosen_ids.extend(ids)
+                    elif isinstance(dom_filter, dict):
+
+                        for skill, sk_filter in dom_filter.items():
+                            if isinstance(sk_filter, int):
+                                print(f"{skill} -> {sk_filter}")
+                                filtered = df[df["Skill"] == skill]
+                                test_df = pd.concat([test_df, filtered])
+                                ids = filtered.sample(
+                                    n=sk_filter, weights=new_qdf["rand_wt"])["ID"]
+                                print("\t", len(ids))
+
+                                chosen_ids.extend(ids)
+
+        # Specific id filtering
+        specific_ids: list[str] = input["chosenIds"]
+        print(f"Specific ids: {len(specific_ids)}")
+        chosen_ids.extend(specific_ids)
+
+        chosen_set = list(set(chosen_ids))
+
+        if shuffle:
+            random.shuffle(chosen_set)
+
+        # Convert from id strings to QInfo
+        chosen_qs: list[QInfo] = []
+        for q in self.q_infos:
+            if q.excluded: continue
+            for id in chosen_set:
+                if id == q.q_id:
+                    chosen_qs.append(q)
+                    break
+
+        print(">>", len(chosen_ids))
+        print(">>", len(chosen_set))
+        print(">>", len(chosen_qs))
+        with open("test.txt", "w") as f:
+            print(test_df.to_string(), file=f)
+
+        doc: Document = self.gen_pdf_from_q_infos(chosen_qs)
+        output_pdf_path: str = input["outputPath"]
+        doc.save(output_pdf_path)
+
+        if "includeAnsTemplate" in input:
+            incl_ans_temp = input[incl_ans_temp]
+
+        if incl_ans_temp:
+            base_name: str = output_pdf_path.removesuffix(".pdf")
+            ans_template_path: str = base_name + "-empty.csv"
+            self.gen_answer_template(chosen_qs, ans_template_path)
+
+        if "includeAnsKey" in input:
+            incl_ans_key = input["includeAnsKey"]
+
+        if incl_ans_key:
+            base_name: str = output_pdf_path.removesuffix(".pdf")
+            ans_list: list[tuple[str, str]] = []
+            for chosen in chosen_qs:
+                for a_info in self.a_infos:
+                    if a_info.q_id == chosen.q_id:
+                        ans_list.append((a_info.q_id, a_info.answer))
+
+            # self.put_answers_on_page(doc, ans_list)
+            self.export_answer_csv(ans_list, base_name + "-key.csv")
+
+        return []
+
+    def gather_possible_set(self, subject: str, input: dict) -> pd.DataFrame:
+        # NOTE: Backward compability ("Reading and Writing" used to written as "RW")
+        if subject == "RW": subject = "Reading and Writing"
+
+        # Columns of self.qdf
+        # ID, Pages, Difficulty, Excluded, Test, Domain, Skill, Source_PDF,
+
+        df = self.qdf
+
+        subject_filter: int | dict = input[subject]
+        if isinstance(subject_filter, int):
+            return df[df["Test"] == subject]
+
+        if not isinstance(subject_filter, dict):
+            raise TypeError(
+                f"Unknown type for the subject filter: {type(subject_filter)}")
+
+        new_qdf: pd.DataFrame = pd.DataFrame(columns=df.columns)
+        for domain, dom_filter in subject_filter.items():
+            if isinstance(dom_filter, int):
+                new_qdf = pd.concat([new_qdf, df[df["Domain"] == domain]])
+            elif isinstance(dom_filter, dict):
+
+                for skill, sk_filter in dom_filter.items():
+                    if isinstance(sk_filter, int):
+                        new_qdf = pd.concat([new_qdf,
+                            df[(df["Domain"] == domain) & (df["Skill"] == skill)]
+                        ])
+                    else:
+                        raise TypeError(
+                            f"Unknown type for the skill filter: {type(sk_filter)}")
+
+            else:
+                raise TypeError(
+                    f"Unknown type for the domain filter: {type(dom_filter)}")
+
+        return new_qdf
+
     def create_question_set(self, input_json: dict, shuffle: bool = True) -> None:
-        # TODO: fix duplication potential duplication of questions.
-        # - It happens because the distinction between 'alls' and 'excludeds' is not accounted for.
+        print("Using a deprecated function: create_question_set()")
 
         output_pdf_path: str = input_json["outputPath"]
         requested_count: int = input_json["totalQuestions"]
@@ -388,7 +552,8 @@ if __name__ == "__main__":
             with open(input_path, "r") as f:
                 input_json = json.load(f)
 
-            qg.create_question_set(input_json)
+            # qg.create_question_set(input_json)
+            qg.create_question_set_v2(input_json)
             print(f"Complete! Exported PDF from filters at '{input_path}'")
 
         case "allids":
