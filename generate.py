@@ -138,10 +138,12 @@ class QGeneration:
         if exclude_excludeds:
             new_qdf = new_qdf[new_qdf["Excluded"] == False]
 
+        if len(new_qdf) == 0:
+            print("[WARN] 0 questions found that satiates your request")
+            return []
+
         new_qdf["rand_wt"] = np.zeros(len(new_qdf), dtype=np.float64)
-        print(prob_dict)
         for dif, prob in prob_dict.items():
-            print(dif, prob)
             new_qdf.loc[new_qdf["Difficulty"] == dif, "rand_wt"] = prob
 
         # NOTE: I know this terrible but it will do for now.
@@ -160,6 +162,8 @@ class QGeneration:
         # Shorter alias: new_qdf <=> df
         df = new_qdf
         for subject in ["Reading and Writing", "Math"]:
+            if subject not in input: continue
+
             subject_filter: int | dict = input[subject]
             if isinstance(subject_filter, int):
                 filtered = df[df["Test"] == subject]
@@ -218,7 +222,7 @@ class QGeneration:
         doc.save(output_pdf_path)
 
         if "includeAnsTemplate" in input:
-            incl_ans_temp = input[incl_ans_temp]
+            incl_ans_temp = input["includeAnsTemplate"]
 
         if incl_ans_temp:
             base_name: str = output_pdf_path.removesuffix(".pdf")
@@ -241,15 +245,19 @@ class QGeneration:
 
         return []
 
-    def gather_possible_set(self, subject: str, input: dict) -> pd.DataFrame:
+    def gather_possible_set(self, subject: str, input: dict) -> pd.DataFrame | None:
         # NOTE: Backward compability ("Reading and Writing" used to written as "RW")
         if subject == "RW": subject = "Reading and Writing"
+
+        assert subject in ["Reading and Writing", "Math"]
 
         # Columns of self.qdf
         # ID, Pages, Difficulty, Excluded, Test, Domain, Skill, Source_PDF,
 
-        df = self.qdf
+        if subject not in input:
+            return None
 
+        df = self.qdf
         subject_filter: int | dict = input[subject]
         if isinstance(subject_filter, int):
             return df[df["Test"] == subject]
@@ -374,7 +382,7 @@ class QGeneration:
         }
         for i, (q_id, answer) in enumerate(ans_list):
             data["No."].append(i + 1)
-            data["Question ID"].append(f"\"{q_id}\"")
+            data["Question ID"].append(f"'{q_id}'")
             data["Answers"].append(answer)
 
         pd.DataFrame(data).to_csv(answers_csv_path, index=False)
@@ -545,7 +553,6 @@ if __name__ == "__main__":
             with open(input_path, "r") as f:
                 input_json = json.load(f)
 
-            # qg.create_question_set(input_json)
             qg.create_question_set_v2(input_json)
             print(f"Complete! Exported PDF from filters at '{input_path}'")
 

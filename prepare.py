@@ -288,6 +288,7 @@ def q_infos_to_df(q_infos: list[QInfo]) -> pd.DataFrame:
         "Skill": [],
         "Source_PDF": [],
     }
+
     for info in q_infos:
         data["ID"].append(info.q_id)
         data["Pages"].append(pages_as_str(info.pg_inds))
