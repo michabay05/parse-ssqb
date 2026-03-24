@@ -125,12 +125,19 @@ class QGeneration:
                 fontsize=fsz,
             )
 
-    def get_output_path(self, group: str, output_name: str) -> str:
-        dir_name = group
+    def get_output_path(self, cohort: str, folder: str, filename: str) -> str:
+        cohort = cohort.strip()
+        folder = folder.strip()
+        filename = filename.strip()
+
+        dir_name = os.path.join(cohort, folder)
         if not os.path.exists(dir_name) or not os.path.isdir(dir_name):
             os.makedirs(dir_name)
 
-        return os.path.join(dir_name, output_name)
+        if not filename.endswith(".pdf"):
+            filename += ".pdf"
+
+        return os.path.join(dir_name, filename)
 
     def create_question_set_v2(self, input: dict, shuffle: bool = True,
         incl_ans_temp: bool = True, incl_ans_key: bool = True,
@@ -222,7 +229,8 @@ class QGeneration:
                     break
 
         doc: Document = self.gen_pdf_from_q_infos(chosen_qs)
-        output_path = self.get_output_path(input["groupName"], input["outputName"])
+        output_path = self.get_output_path(
+            input["cohort"], input["folder"], input["filename"])
         doc.save(output_path)
 
         if "includeAnsTemplate" in input:

@@ -1,8 +1,10 @@
 {
-    "groupName": "jun26",
-    "outputName": "jun26-rw1-grammar-exam.pdf",
+    "cohort": "jun26",
+    "folder": "rw2",
+    "filename": "craft-structure-exam",
+
     "Reading and Writing": {
-        "Standard English Conventions": 30
+        "Craft and Structure": 30
     },
     "includeAnsKey": true,
     "includeAnsTemplate": true,

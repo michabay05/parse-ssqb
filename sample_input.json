@@ -1,6 +1,7 @@
 {
-    "groupName": "may26",
-    "outputName": "sample.pdf",
+    "cohort": "may26",
+    "folder": "m2",
+    "filename": "sample.pdf",
     "Reading and Writing": {
         "Information and Ideas": {
             "Inferences": 3

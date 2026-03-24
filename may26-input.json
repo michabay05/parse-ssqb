@@ -1,9 +1,11 @@
 {
-    "groupName": "may26",
-    "outputName": "may26-m1-algebra-exam.pdf",
+    "cohort": "may26",
+    "folder": "m3",
+    "filename": "geometry-exam",
+
     "Math": {
-        "Algebra": 30
-    }, 
+        "Geometry and Trigonometry": 30
+    },
     "includeAnsKey": true,
     "includeAnsTemplate": true,
     "prob": {
