@@ -1,0 +1,14 @@
+{
+    "groupName": "may26",
+    "outputName": "may26-m1-algebra-exam.pdf",
+    "Math": {
+        "Algebra": 30
+    }, 
+    "includeAnsKey": true,
+    "includeAnsTemplate": true,
+    "prob": {
+        "easy": 0.0,
+        "medium": 0.15,
+        "hard": 0.85
+    }
+}

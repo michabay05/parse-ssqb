@@ -125,6 +125,13 @@ class QGeneration:
                 fontsize=fsz,
             )
 
+    def get_output_path(self, group: str, output_name: str) -> str:
+        dir_name = group
+        if not os.path.exists(dir_name) or not os.path.isdir(dir_name):
+            os.makedirs(dir_name)
+
+        return os.path.join(dir_name, output_name)
+
     def create_question_set_v2(self, input: dict, shuffle: bool = True,
         incl_ans_temp: bool = True, incl_ans_key: bool = True,
         exclude_excludeds: bool = True
@@ -205,9 +212,6 @@ class QGeneration:
         if shuffle:
             random.shuffle(chosen_set)
 
-        with open("test.txt", "w") as f:
-            print(debug_df.to_string(), file=f)
-
         # Convert from id strings to QInfo
         chosen_qs: list[QInfo] = []
         for q in self.q_infos:
@@ -218,22 +222,22 @@ class QGeneration:
                     break
 
         doc: Document = self.gen_pdf_from_q_infos(chosen_qs)
-        output_pdf_path: str = input["outputPath"]
-        doc.save(output_pdf_path)
+        output_path = self.get_output_path(input["groupName"], input["outputName"])
+        doc.save(output_path)
 
         if "includeAnsTemplate" in input:
             incl_ans_temp = input["includeAnsTemplate"]
 
         if incl_ans_temp:
-            base_name: str = output_pdf_path.removesuffix(".pdf")
-            ans_template_path: str = base_name + "-empty.csv"
+            name_wo_ext: str = output_path.removesuffix(".pdf")
+            ans_template_path: str = name_wo_ext + "-empty.csv"
             self.gen_answer_template(chosen_qs, ans_template_path)
 
         if "includeAnsKey" in input:
             incl_ans_key = input["includeAnsKey"]
 
         if incl_ans_key:
-            base_name: str = output_pdf_path.removesuffix(".pdf")
+            name_wo_ext: str = output_path.removesuffix(".pdf")
             ans_list: list[tuple[str, str]] = []
             for chosen in chosen_qs:
                 for a_info in self.a_infos:
@@ -241,7 +245,7 @@ class QGeneration:
                         ans_list.append((a_info.q_id, a_info.answer))
 
             # self.put_answers_on_page(doc, ans_list)
-            self.export_answer_csv(ans_list, base_name + "-key.csv")
+            self.export_answer_csv(ans_list, name_wo_ext + "-key.csv")
 
         return []
 
@@ -286,92 +290,6 @@ class QGeneration:
                     f"Unknown type for the domain filter: {type(dom_filter)}")
 
         return new_qdf
-
-    def create_question_set(self, input_json: dict, shuffle: bool = True) -> None:
-        print("Using a deprecated function: create_question_set()")
-
-        output_pdf_path: str = input_json["outputPath"]
-        requested_count: int = input_json["totalQuestions"]
-        specific_ids: list[str] = input_json["chosenIds"]
-        prob: dict[Level, float] = input_json["prob"]
-        incl_ans_key: bool = input_json["includeAnsKey"]
-        incl_ans_temp: bool = input_json["includeAnsTemplate"]
-
-        qs_by_diff: dict[Level, list[int]] = {
-            "easy": [],
-            "medium": [],
-            "hard": []
-        }
-
-        # Subject based filtering
-        for test in ["RW", "Math"]:
-            for domain, skills_info in input_json[test].items():
-                for skill in skills_info.keys():
-                    # Find questions that test the expected skill
-                    for i, q in enumerate(self.q_infos):
-                        if q.excluded: continue
-                        if q.domain == domain and q.skill == skill:
-                            qs_by_diff[q.level].append(i)
-
-        all_chosen: list[QInfo] = []
-        # TOTAL = RANDOM_REQUESTED + SPECIFIC_ID_REQUESTED
-        max_random_q_count = requested_count - len(specific_ids)
-        if prob:
-            assert prob["easy"] + prob["medium"] + prob["hard"] == 1.0
-
-            for diff, q_inds in qs_by_diff.items():
-                # NOTE: Ensure that there is at least one question of a given difficulty
-                n = max(int(max_random_q_count * prob[diff]), 1)
-                all_chosen.extend([self.q_infos[ind] for ind in random.sample(q_inds, n)])
-        else:
-            # Flatten the dictionary's values into a 1D list
-            all_valids = []
-            for q_inds in qs_by_diff.values():
-                all_valids.extend(q_inds)
-
-            all_chosen.extend([
-                self.q_infos[c_i] for c_i in random.sample(all_valids, max_random_q_count)
-            ])
-
-        # NOTE: The expectation is that the random selection process produces N or more questions
-        # where N = the maximum number of questions that can be randomly generated. The rest of the
-        # questions are from specific ids.
-        assert len(all_chosen) >= max_random_q_count, (
-            f"[len(all_chosen) = {len(all_chosen)}] < [{max_random_q_count} = max_random_q_count]"
-        )
-
-        # Specific id filtering
-        if len(specific_ids) > 0:
-            all_chosen_so_far = [chosen.q_id for chosen in all_chosen]
-            for q_info in self.q_infos:
-                if (q_info.q_id in specific_ids) and (q_info.q_id not in all_chosen_so_far):
-                    all_chosen.append(q_info)
-
-        assert len(all_chosen) <= requested_count, (
-            f"Questions that satisfy reqs ({len(all_chosen)}) <= Requested questions ({requested_count}): False"
-        )
-
-        if shuffle:
-            random.shuffle(all_chosen)
-
-        doc: Document = self.gen_pdf_from_q_infos(all_chosen)
-        doc.save(output_pdf_path)
-
-        if incl_ans_temp:
-            base_name: str = output_pdf_path.removesuffix(".pdf")
-            ans_template_path: str = base_name + "-empty.csv"
-            self.gen_answer_template(all_chosen, ans_template_path)
-
-        if incl_ans_key:
-            base_name: str = output_pdf_path.removesuffix(".pdf")
-            ans_list: list[tuple[str, str]] = []
-            for chosen in all_chosen:
-                for a_info in self.a_infos:
-                    if a_info.q_id == chosen.q_id:
-                        ans_list.append((a_info.q_id, a_info.answer))
-
-            # self.put_answers_on_page(doc, ans_list)
-            self.export_answer_csv(ans_list, base_name + "-key.csv")
 
     # ans_list: (question_id, answer)
     def export_answer_csv(self, ans_list: list[tuple[str, str]], answers_csv_path: str) -> None:
@@ -548,7 +466,12 @@ if __name__ == "__main__":
             qg.parse_pdfs()
 
         case "qset":
-            input_path: str = args[0] if len(args) > 0 else "input.json"
+            if len(args) != 1:
+                print("ERROR: provide input json to use for filtering.")
+                print("Try rerunning this command with the 'help' flag for more info.")
+                sys.exit(1)
+
+            input_path: str = args[0]
             # The information about the question set's composition is found from the json
             with open(input_path, "r") as f:
                 input_json = json.load(f)
@@ -566,7 +489,7 @@ if __name__ == "__main__":
 
         case "regen-ans":
             if len(args) != 2:
-                print("ERROR: provide input json to use for filtering.")
+                print("ERROR: provide the original question set pdf and output names are required.")
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 

@@ -1,5 +1,6 @@
 {
-    "outputPath": "sample.pdf",
+    "groupName": "may26",
+    "outputName": "sample.pdf",
     "Reading and Writing": {
         "Information and Ideas": {
             "Inferences": 3
@@ -22,6 +23,8 @@
         "medium": 0.2,
         "hard": 0.8
     },
+    "includeAnsKey": true,
+    "includeAnsTemplate": true,
     "chosenIds": [
         "608eeb6e",
         "b0fc3166",

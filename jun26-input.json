@@ -1,0 +1,14 @@
+{
+    "groupName": "jun26",
+    "outputName": "jun26-rw1-grammar-exam.pdf",
+    "Reading and Writing": {
+        "Standard English Conventions": 30
+    },
+    "includeAnsKey": true,
+    "includeAnsTemplate": true,
+    "prob": {
+        "easy": 0.1,
+        "medium": 0.25,
+        "hard": 0.65
+    }
+}
