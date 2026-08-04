@@ -1,16 +1,16 @@
 {
     "cohort": "jun26",
-    "folder": "rw2",
-    "filename": "craft-structure-exam",
+    "folder": "m3",
+    "filename": "geometry-exam",
 
-    "Reading and Writing": {
-        "Craft and Structure": 30
+    "Math": {
+        "Geometry and Trigonometry": 30
     },
     "includeAnsKey": true,
     "includeAnsTemplate": true,
     "prob": {
         "easy": 0.1,
-        "medium": 0.25,
-        "hard": 0.65
+        "medium": 0.3,
+        "hard": 0.6
     }
 }

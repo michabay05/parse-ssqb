@@ -1,13 +1,19 @@
 {
     "cohort": "may26",
-    "folder": "m3",
-    "filename": "geometry-exam",
+    "folder": "r3",
+    "filename": "prob-solv-domain-practice",
 
     "Math": {
-        "Geometry and Trigonometry": 30
+        "Problem-Solving and Data Analysis": {
+            "Two-variable data: Models and scatterplots": 8,
+            "Ratios, rates, proportional relationships, and units": 3,
+            "Probability and conditional probability": 8,
+            "One-variable data: Distributions and measures of center and spread": 7,
+            "Percentages": 4
+        }
     },
     "includeAnsKey": true,
-    "includeAnsTemplate": true,
+    "includeAnsTemplate": false,
     "prob": {
         "easy": 0.0,
         "medium": 0.15,

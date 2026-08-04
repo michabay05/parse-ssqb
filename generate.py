@@ -1,37 +1,49 @@
+import json
+import math
+import os
+import random
+import re
+import sys
 from pathlib import Path
 from typing import Literal
-import json, math, os, random, re, sys
 
 import fitz
-from pymupdf import Document
-import pandas as pd
 import numpy as np
+import pandas as pd
+from pymupdf import Document
 
 import prepare
 from prepare import AnsInfo, Level, QInfo
 
 Subject = Literal["Reading and Writing", "Math"]
 
+
 class QGeneration:
-    def __init__(self,
-        q_parsed_path: str = "./all-q-parsed.csv", a_parsed_path: str = "./all-a-parsed.csv"
+    def __init__(
+        self,
+        q_parsed_path: str = "./all-q-parsed.csv",
+        a_parsed_path: str = "./all-a-parsed.csv",
     ) -> None:
         try:
             self.q_infos: list[QInfo] = prepare.import_q_parsed_info(q_parsed_path)
         except:
-            print(f"ERROR: Could not find {q_parsed_path}; question information loading failed...")
+            print(
+                f"ERROR: Could not find {q_parsed_path}; question information loading failed..."
+            )
             print("WARN: Either regenerate the parsed csv or find the parsed csv path")
 
         try:
             self.a_infos: list[AnsInfo] = prepare.import_a_parsed_info(a_parsed_path)
         except:
-            print(f"ERROR: Could not find {a_parsed_path}; answer information loading failed...")
+            print(
+                f"ERROR: Could not find {a_parsed_path}; answer information loading failed..."
+            )
             print("WARN: Either regenerate the parsed csv or find the parsed csv path")
 
         self.qdf: pd.DataFrame = prepare.q_infos_to_df(self.q_infos)
 
-    def parse_pdfs(self,
-        q_out_csv: str = "all-q-parsed.csv", a_out_csv: str = "all-a-parsed.csv"
+    def parse_pdfs(
+        self, q_out_csv: str = "all-q-parsed.csv", a_out_csv: str = "all-a-parsed.csv"
     ) -> None:
         file_paths: list[tuple[str, bool]] = []
         for dir_ind, dir in enumerate(["./alls/questions/", "./excludeds/questions/"]):
@@ -89,39 +101,46 @@ class QGeneration:
         with open(output_json, "w") as f:
             json.dump(tree, f, indent=4)
 
-    def put_answers_on_page(self, doc: Document, answers: list[tuple[str, str]]) -> None:
+    def put_answers_on_page(
+        self, doc: Document, answers: list[tuple[str, str]]
+    ) -> None:
         dpi = 72
         paper_w, paper_h = (8.5, 11)
-        width, height = (paper_w*dpi, paper_h*dpi)
+        width, height = (paper_w * dpi, paper_h * dpi)
         pg = doc.new_page(width=width, height=height)
 
         margin = (48, 48)
         h_indent = 0.2 * margin[0]
         fsz = 13
-        title_line_h = 2*fsz + 1*(2*fsz)
-        pg.insert_text((margin[0], margin[1] + title_line_h), "Answer key", fontsize=2*fsz)
+        title_line_h = 2 * fsz + 1 * (2 * fsz)
+        pg.insert_text(
+            (margin[0], margin[1] + title_line_h), "Answer key", fontsize=2 * fsz
+        )
 
-        line_h = fsz + 0.5*fsz
-        total_vert_space = (height - (margin[1] + title_line_h)) - 2*margin[1]
+        line_h = fsz + 0.5 * fsz
+        total_vert_space = (height - (margin[1] + title_line_h)) - 2 * margin[1]
         row_count = int(total_vert_space // line_h)
         col_count = math.ceil(len(answers) / row_count)
 
         row_h = line_h
-        col_w = (width - (2*margin[0])) / col_count
+        col_w = (width - (2 * margin[0])) / col_count
 
         # i = r*width + c
         # i - c = r*width
         # (i - c) / width = r; given c
-        for (i, (q_id, answer)) in enumerate(answers):
+        for i, (q_id, answer) in enumerate(answers):
             r = i % row_count
             c = (i - r) / row_count
             # c = i % col_count
             # r = (i - c) / col_count
             pg.insert_text(
                 # (start + c*col_w, start + r*row_h)
-                point=((margin[0] + h_indent) + c*col_w, (margin[1] + title_line_h) + (r + 1)*row_h),
+                point=(
+                    (margin[0] + h_indent) + c * col_w,
+                    (margin[1] + title_line_h) + (r + 1) * row_h,
+                ),
                 # text=f"({i+1:4}) {q_id:9}; {answer}",
-                text=f"{i+1:4}. {q_id:10}; {answer}",
+                text=f"{i + 1:4}. {q_id:10}; {answer}",
                 fontsize=fsz,
             )
 
@@ -139,9 +158,13 @@ class QGeneration:
 
         return os.path.join(dir_name, filename)
 
-    def create_question_set_v2(self, input: dict, shuffle: bool = True,
-        incl_ans_temp: bool = True, incl_ans_key: bool = True,
-        exclude_excludeds: bool = True
+    def create_question_set_v2(
+        self,
+        input: dict,
+        shuffle: bool = True,
+        incl_ans_temp: bool = True,
+        incl_ans_key: bool = True,
+        exclude_excludeds: bool = True,
     ) -> list[QInfo]:
         rw_possible_df = self.gather_possible_set("Reading and Writing", input)
         math_possible_df = self.gather_possible_set("Math", input)
@@ -176,13 +199,15 @@ class QGeneration:
         # Shorter alias: new_qdf <=> df
         df = new_qdf
         for subject in ["Reading and Writing", "Math"]:
-            if subject not in input: continue
+            if subject not in input:
+                continue
 
             subject_filter: int | dict = input[subject]
             if isinstance(subject_filter, int):
                 filtered = df[df["Test"] == subject]
                 f_rows = filtered.sample(
-                    n=subject_filter, weights="rand_wt", replace=False)
+                    n=subject_filter, weights="rand_wt", replace=False
+                )
                 debug_df = pd.concat([debug_df, f_rows], ignore_index=True)
 
                 chosen_ids.extend(f_rows["ID"])
@@ -192,19 +217,21 @@ class QGeneration:
                     if isinstance(dom_filter, int):
                         filtered = df[df["Domain"] == domain]
                         f_rows = filtered.sample(
-                            n=dom_filter, weights="rand_wt", replace=False)
+                            n=dom_filter, weights="rand_wt", replace=False
+                        )
                         debug_df = pd.concat([debug_df, f_rows], ignore_index=True)
 
                         chosen_ids.extend(f_rows["ID"])
                     elif isinstance(dom_filter, dict):
-
                         for skill, sk_filter in dom_filter.items():
                             if isinstance(sk_filter, int):
                                 filtered = df[df["Skill"] == skill]
                                 f_rows = filtered.sample(
-                                    n=sk_filter, weights="rand_wt", replace=False)
+                                    n=sk_filter, weights="rand_wt", replace=False
+                                )
                                 debug_df = pd.concat(
-                                    [debug_df, f_rows], ignore_index=True)
+                                    [debug_df, f_rows], ignore_index=True
+                                )
 
                                 chosen_ids.extend(f_rows["ID"])
 
@@ -222,7 +249,8 @@ class QGeneration:
         # Convert from id strings to QInfo
         chosen_qs: list[QInfo] = []
         for q in self.q_infos:
-            if q.excluded: continue
+            if q.excluded:
+                continue
             for id in chosen_set:
                 if id == q.q_id:
                     chosen_qs.append(q)
@@ -230,7 +258,8 @@ class QGeneration:
 
         doc: Document = self.gen_pdf_from_q_infos(chosen_qs)
         output_path = self.get_output_path(
-            input["cohort"], input["folder"], input["filename"])
+            input["cohort"], input["folder"], input["filename"]
+        )
         doc.save(output_path)
 
         if "includeAnsTemplate" in input:
@@ -259,7 +288,8 @@ class QGeneration:
 
     def gather_possible_set(self, subject: str, input: dict) -> pd.DataFrame | None:
         # NOTE: Backward compability ("Reading and Writing" used to written as "RW")
-        if subject == "RW": subject = "Reading and Writing"
+        if subject == "RW":
+            subject = "Reading and Writing"
 
         assert subject in ["Reading and Writing", "Math"]
 
@@ -276,36 +306,39 @@ class QGeneration:
 
         if not isinstance(subject_filter, dict):
             raise TypeError(
-                f"Unknown type for the subject filter: {type(subject_filter)}")
+                f"Unknown type for the subject filter: {type(subject_filter)}"
+            )
 
         new_qdf: pd.DataFrame = pd.DataFrame(columns=df.columns)
         for domain, dom_filter in subject_filter.items():
             if isinstance(dom_filter, int):
                 new_qdf = pd.concat([new_qdf, df[df["Domain"] == domain]])
             elif isinstance(dom_filter, dict):
-
                 for skill, sk_filter in dom_filter.items():
                     if isinstance(sk_filter, int):
-                        new_qdf = pd.concat([new_qdf,
-                            df[(df["Domain"] == domain) & (df["Skill"] == skill)]
-                        ])
+                        new_qdf = pd.concat(
+                            [
+                                new_qdf,
+                                df[(df["Domain"] == domain) & (df["Skill"] == skill)],
+                            ]
+                        )
                     else:
                         raise TypeError(
-                            f"Unknown type for the skill filter: {type(sk_filter)}")
+                            f"Unknown type for the skill filter: {type(sk_filter)}"
+                        )
 
             else:
                 raise TypeError(
-                    f"Unknown type for the domain filter: {type(dom_filter)}")
+                    f"Unknown type for the domain filter: {type(dom_filter)}"
+                )
 
         return new_qdf
 
     # ans_list: (question_id, answer)
-    def export_answer_csv(self, ans_list: list[tuple[str, str]], answers_csv_path: str) -> None:
-        data: dict = {
-            "No.": [],
-            "Question ID": [],
-            "Answers": []
-        }
+    def export_answer_csv(
+        self, ans_list: list[tuple[str, str]], answers_csv_path: str
+    ) -> None:
+        data: dict = {"No.": [], "Question ID": [], "Answers": []}
         for i, (q_id, answer) in enumerate(ans_list):
             data["No."].append(i + 1)
             data["Question ID"].append(f"'{q_id}'")
@@ -313,12 +346,10 @@ class QGeneration:
 
         pd.DataFrame(data).to_csv(answers_csv_path, index=False)
 
-    def gen_answer_template(self, all_chosen: list[QInfo], ans_template_path: str) -> None:
-        data: dict = {
-            "No.": [],
-            "Question ID": [],
-            "Answers": []
-        }
+    def gen_answer_template(
+        self, all_chosen: list[QInfo], ans_template_path: str
+    ) -> None:
+        data: dict = {"No.": [], "Question ID": [], "Answers": []}
         for i, chosen in enumerate(all_chosen):
             data["No."].append(i + 1)
             data["Question ID"].append(f"'{chosen.q_id}'")
@@ -326,7 +357,9 @@ class QGeneration:
 
         pd.DataFrame(data).to_csv(ans_template_path, index=False)
 
-    def check_answers(self, student_ans_path: str, ans_key_path: str) -> tuple[int, int]:
+    def check_answers(
+        self, student_ans_path: str, ans_key_path: str
+    ) -> tuple[int, int]:
         res_df = pd.read_csv(student_ans_path)
         ans_df = pd.read_csv(ans_key_path)
         assert len(res_df) == len(ans_df), f"{len(res_df)} == {len(ans_df)}"
@@ -340,9 +373,11 @@ class QGeneration:
 
         # NOTE: Convert from dataframe to pairs of id and answers
         responses: list[tuple[str, str]] = [
-            (id, str(res)) for id, res in zip(res_df[id_col], res_df[ans_col])]
+            (id, str(res)) for id, res in zip(res_df[id_col], res_df[ans_col])
+        ]
         answers: list[tuple[str, str]] = [
-            (id, str(ans)) for id, ans in zip(ans_df[id_col], ans_df[ans_col])]
+            (id, str(ans)) for id, ans in zip(ans_df[id_col], ans_df[ans_col])
+        ]
         assert len(responses) == len(answers)
 
         correct, total = 0, 0
@@ -384,13 +419,13 @@ class QGeneration:
             # First, convert any fraction into a decimal value
             rmd, amd = 0.0, 0.0
             if len(rm[0]) > 0:
-                nums = str(rm[0]).strip().split('/')
+                nums = str(rm[0]).strip().split("/")
                 rmd = float(nums[0]) / float(nums[1])
             else:
                 rmd = float(rm[1])
 
             if len(am[0]) > 0:
-                nums = str(am[0]).strip().split('/')
+                nums = str(am[0]).strip().split("/")
                 amd = float(nums[0]) / float(nums[1])
             else:
                 amd = float(am[1])
@@ -424,8 +459,8 @@ class QGeneration:
 
         return out_pdf
 
-    def derive_answers_from_qpdf(self,
-        in_pdf_path: str, out_pdf_path: str, append_ans: bool = True
+    def derive_answers_from_qpdf(
+        self, in_pdf_path: str, out_pdf_path: str, append_ans: bool = True
     ) -> None:
         q_infos: list[QInfo] = prepare.parse_question_pdf(in_pdf_path, False)
 
@@ -450,14 +485,27 @@ class QGeneration:
 def usage(program: str) -> None:
     print(f"USAGE: {program} <MODES> [ARGS]\n")
     print("Modes:")
-    print("         qset < IN_JSON  >            |  Generate question set given an input json for filtering")
-    print("       allids < OUT_JSON >            |  Get a json containing the id of all questions")
-    print("     parse-qs < OUT_CSV  >            |  Categorize questions pdfs and output a single csv")
-    print("     parse-as < OUT_CSV  >            |  Categorize answers pdfs and output a single csv")
-    print("    skilltree                         |  Generate a skill tree with quantity; save into json")
-    print("    regen-ans <  IN_PDF  > <OUT_PDF>  |  Regenerate answers from a question pdf")
+    print(
+        "         qset < IN_JSON  >            |  Generate question set given an input json for filtering"
+    )
+    print(
+        "       allids < OUT_JSON >            |  Get a json containing the id of all questions"
+    )
+    print(
+        "     parse-qs < OUT_CSV  >            |  Categorize questions pdfs and output a single csv"
+    )
+    print(
+        "     parse-as < OUT_CSV  >            |  Categorize answers pdfs and output a single csv"
+    )
+    print(
+        "    skilltree                         |  Generate a skill tree with quantity; save into json"
+    )
+    print(
+        "    regen-ans <  IN_PDF  > <OUT_PDF>  |  Regenerate answers from a question pdf"
+    )
     print("        grade <  IN_CSV  > <ANS_CSV>  |  Grade responses against answer csv")
     print("         help                         |  Get this help message")
+
 
 if __name__ == "__main__":
     program: str = sys.argv[0]
@@ -497,7 +545,9 @@ if __name__ == "__main__":
 
         case "regen-ans":
             if len(args) != 2:
-                print("ERROR: provide the original question set pdf and output names are required.")
+                print(
+                    "ERROR: provide the original question set pdf and output names are required."
+                )
                 print("Try rerunning this command with the 'help' flag for more info.")
                 sys.exit(1)
 
